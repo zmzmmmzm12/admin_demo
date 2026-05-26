@@ -10,12 +10,14 @@ import { useAppPreferences } from "../contexts/AppPreferencesContext";
 
 const menus: Array<{
   to: string;
-  key: "menu.dashboard" | "menu.users";
+  key: "menu.dashboard" | "menu.users" | "menu.notices" | "menu.videos";
   icon: string;
   end?: boolean;
 }> = [
   { to: "/", key: "menu.dashboard", icon: "space_dashboard", end: true },
   { to: "/users", key: "menu.users", icon: "group" },
+  { to: "/notices", key: "menu.notices", icon: "campaign" },
+  { to: "/videos", key: "menu.videos", icon: "movie" },
 ];
 
 export function AdminLayout() {

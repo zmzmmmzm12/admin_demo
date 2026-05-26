@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.100.14",
+    "@uiw/react-md-editor": "^4.1.1",
     "axios": "^1.16.1",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.20",

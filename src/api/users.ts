@@ -23,3 +23,13 @@ export async function updateUserStatus(id: string, status: UserStatus) {
   )
   return response.data.data
 }
+
+export async function deleteUser(id: string) {
+  const response = await apiClient.delete<{ data: { id: string } }>(`/users/${id}`)
+  return response.data.data
+}
+
+export async function deleteUsers(ids: string[]) {
+  const response = await apiClient.post<{ data: { ids: string[] } }>('/users/bulk-delete', { ids })
+  return response.data.data
+}

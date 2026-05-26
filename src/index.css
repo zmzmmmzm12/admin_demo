@@ -1,4 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined');
+@import url('@uiw/react-md-editor/markdown-editor.css');
+@import url('@uiw/react-markdown-preview/markdown.css');
 
 @tailwind base;
 @tailwind components;
@@ -48,6 +50,12 @@
   input,
   textarea {
     user-select: auto;
+  }
+
+  input[type='checkbox'] {
+    appearance: auto;
+    -webkit-appearance: checkbox;
+    border-radius: 2px;
   }
 
   a {

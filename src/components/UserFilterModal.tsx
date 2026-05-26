@@ -1,71 +1,81 @@
-import { useEffect, useState } from 'react'
-import { useAppPreferences } from '../contexts/AppPreferencesContext'
-import type { UserRole, UserStatus } from '../types/user'
+import { useEffect, useState } from "react";
+import { useAppPreferences } from "../contexts/AppPreferencesContext";
+import type { UserRole, UserStatus } from "../types/user";
 
 export interface UserFilterValues {
-  searchField: 'id' | 'name' | 'email'
-  keyword: string
-  status: 'all' | UserStatus
-  role: 'all' | UserRole
+  searchField: "id" | "name" | "email";
+  keyword: string;
+  status: "all" | UserStatus;
+  role: "all" | UserRole;
 }
 
 interface UserFilterModalProps {
-  open: boolean
-  loading?: boolean
-  value: UserFilterValues
-  onClose: () => void
-  onApply: (value: UserFilterValues) => void
+  open: boolean;
+  loading?: boolean;
+  value: UserFilterValues;
+  onClose: () => void;
+  onApply: (value: UserFilterValues) => void;
 }
 
 const searchFieldOptions = [
-  { value: 'id', labelKey: 'users.searchType.id' },
-  { value: 'name', labelKey: 'users.searchType.name' },
-  { value: 'email', labelKey: 'users.searchType.email' },
-] as const
+  { value: "id", labelKey: "users.searchType.id" },
+  { value: "name", labelKey: "users.searchType.name" },
+  { value: "email", labelKey: "users.searchType.email" },
+] as const;
 
 const statusOptions = [
-  { value: 'all', labelKey: 'users.allStatus' },
-  { value: 'active', labelKey: 'users.status.active' },
-  { value: 'pending', labelKey: 'users.status.pending' },
-  { value: 'suspended', labelKey: 'users.status.suspended' },
-] as const
+  { value: "all", labelKey: "users.allStatus" },
+  { value: "active", labelKey: "users.status.active" },
+  { value: "pending", labelKey: "users.status.pending" },
+  { value: "suspended", labelKey: "users.status.suspended" },
+] as const;
 
 const roleOptions = [
-  { value: 'all', labelKey: 'users.allRole' },
-  { value: 'super', labelKey: 'users.role.super' },
-  { value: 'manager', labelKey: 'users.role.manager' },
-  { value: 'operator', labelKey: 'users.role.operator' },
-] as const
+  { value: "all", labelKey: "users.allRole" },
+  { value: "super", labelKey: "users.role.super" },
+  { value: "manager", labelKey: "users.role.manager" },
+  { value: "operator", labelKey: "users.role.operator" },
+] as const;
 
 const initialFilterState: UserFilterValues = {
-  searchField: 'id',
-  keyword: '',
-  status: 'all',
-  role: 'all',
-}
+  searchField: "id",
+  keyword: "",
+  status: "all",
+  role: "all",
+};
 
-export function UserFilterModal({ open, loading = false, value, onClose, onApply }: UserFilterModalProps) {
-  const { t } = useAppPreferences()
-  const [localValue, setLocalValue] = useState<UserFilterValues>(value)
+export function UserFilterModal({
+  open,
+  loading = false,
+  value,
+  onClose,
+  onApply,
+}: UserFilterModalProps) {
+  const { t } = useAppPreferences();
+  const [localValue, setLocalValue] = useState<UserFilterValues>(value);
 
   useEffect(() => {
     if (open) {
-      setLocalValue(value)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLocalValue(value);
     }
-  }, [open, value])
+  }, [open, value]);
 
   if (!open) {
-    return null
+    return null;
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-3" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-3"
+      onClick={onClose}
+    >
       <div
         className="relative flex w-[520px] max-w-[calc(100vw-20px)] flex-col rounded-md bg-white shadow-lg dark:bg-dark-surface"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-slate-100 px-1 text-base font-semibold text-slate-700 dark:border-dark-border dark:text-slate-100">
-          <div className="px-3 py-3">{t('users.filterTitle')}</div>
+          <div className="px-3 py-3">{t("users.filterTitle")}</div>
           <button
             type="button"
             className="flex size-10 items-center justify-center text-slate-500 dark:text-slate-300"
@@ -79,7 +89,9 @@ export function UserFilterModal({ open, loading = false, value, onClose, onApply
         <div className="flex flex-col gap-4 px-5 py-4 text-sm text-slate-700 dark:text-slate-100">
           <div className="grid grid-cols-1 gap-4 sm:[grid-template-columns:140px_minmax(0,1fr)]">
             <div>
-              <div className="mb-2 text-xs text-slate-500 dark:text-slate-400">{t('users.searchType')}</div>
+              <div className="mb-2 text-xs text-slate-500 dark:text-slate-400">
+                {t("users.searchType")}
+              </div>
               <div className="relative">
                 <select
                   className="h-9 w-full cursor-pointer rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-dark-border dark:bg-dark-surface dark:text-slate-100"
@@ -88,7 +100,10 @@ export function UserFilterModal({ open, loading = false, value, onClose, onApply
                   onChange={(event) =>
                     setLocalValue((prev) => ({
                       ...prev,
-                      searchField: event.target.value as 'id' | 'name' | 'email',
+                      searchField: event.target.value as
+                        | "id"
+                        | "name"
+                        | "email",
                     }))
                   }
                 >
@@ -105,12 +120,16 @@ export function UserFilterModal({ open, loading = false, value, onClose, onApply
             </div>
 
             <div>
-              <div className="mb-2 text-xs text-slate-500 dark:text-slate-400">{t('users.searchValue')}</div>
+              <div className="mb-2 text-xs text-slate-500 dark:text-slate-400">
+                {t("users.searchValue")}
+              </div>
               <input
                 type="text"
                 className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none disabled:cursor-not-allowed disabled:opacity-60 dark:border-dark-border dark:bg-dark-surface dark:text-slate-100"
                 disabled={loading}
-                placeholder={t(`users.searchType.${localValue.searchField}` as const)}
+                placeholder={t(
+                  `users.searchType.${localValue.searchField}` as const,
+                )}
                 value={localValue.keyword}
                 onChange={(event) =>
                   setLocalValue((prev) => ({
@@ -124,7 +143,9 @@ export function UserFilterModal({ open, loading = false, value, onClose, onApply
           </div>
 
           <div>
-            <div className="mb-2 text-xs text-slate-500 dark:text-slate-400">{t('users.filterStatus')}</div>
+            <div className="mb-2 text-xs text-slate-500 dark:text-slate-400">
+              {t("users.filterStatus")}
+            </div>
             <div className="relative">
               <select
                 className="h-9 w-full cursor-pointer rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-dark-border dark:bg-dark-surface dark:text-slate-100"
@@ -133,7 +154,7 @@ export function UserFilterModal({ open, loading = false, value, onClose, onApply
                 onChange={(event) =>
                   setLocalValue((prev) => ({
                     ...prev,
-                    status: event.target.value as 'all' | UserStatus,
+                    status: event.target.value as "all" | UserStatus,
                   }))
                 }
               >
@@ -150,7 +171,9 @@ export function UserFilterModal({ open, loading = false, value, onClose, onApply
           </div>
 
           <div>
-            <div className="mb-2 text-xs text-slate-500 dark:text-slate-400">{t('users.filterRole')}</div>
+            <div className="mb-2 text-xs text-slate-500 dark:text-slate-400">
+              {t("users.filterRole")}
+            </div>
             <div className="relative">
               <select
                 className="h-9 w-full cursor-pointer rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-dark-border dark:bg-dark-surface dark:text-slate-100"
@@ -159,7 +182,7 @@ export function UserFilterModal({ open, loading = false, value, onClose, onApply
                 onChange={(event) =>
                   setLocalValue((prev) => ({
                     ...prev,
-                    role: event.target.value as 'all' | UserRole,
+                    role: event.target.value as "all" | UserRole,
                   }))
                 }
               >
@@ -183,7 +206,7 @@ export function UserFilterModal({ open, loading = false, value, onClose, onApply
             disabled={loading}
             onClick={() => setLocalValue(initialFilterState)}
           >
-            {t('users.filterReset')}
+            {t("users.filterReset")}
           </button>
           <button
             type="button"
@@ -191,10 +214,10 @@ export function UserFilterModal({ open, loading = false, value, onClose, onApply
             disabled={loading}
             onClick={() => onApply(localValue)}
           >
-            {t('users.filterApply')}
+            {t("users.filterApply")}
           </button>
         </div>
       </div>
     </div>
-  )
+  );
 }

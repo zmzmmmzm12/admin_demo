@@ -5,31 +5,43 @@
 ## Stack
 
 - React 19
-- TypeScript
-- Vite
+- TypeScript 6
+- Vite 8
 - React Router DOM v7
 - TanStack Query v5
 - Zustand
 - Axios
 - MSW v2
 - TailwindCSS 3
+- @uiw/react-md-editor
+- Day.js
+- ESLint 10
+- PostCSS / Autoprefixer
 
 ## 구현 기능
 
-- 대시보드 요약 지표 조회
+- 운영 대시보드(요약 KPI, 유입 추이 차트, 채널 비중, 작업/알림)
 - 회원 목록 조회 / 검색 / 상태 / 권한 필터
 - 회원 상세 조회
 - 회원 상태 변경(승인/정지/활성화)
-- 숫자 버튼 기반 페이지네이션
+- 회원 목록 CSV(엑셀) 다운로드
+- 회원/공지/영상/자막 테이블 체크박스 선택 및 다중 삭제
+- 공지사항 목록/상세 모달/등록/수정
+- 공지사항 Markdown WYSIWYG 에디터(@uiw/react-md-editor) 기반 작성/미리보기
+- 영상 목록 조회 / 상태 필터 / 상세 조회
+- 영상 자막 추가/개별삭제/선택삭제
+- 영상 자막 자동 추출 / 자동 번역 / 언어 단위 관리 보조 기능
+- 숫자 버튼 기반 페이지네이션 공통 컴포넌트
 - 다크/라이트 테마 토글
 - 한국어/영어 언어 전환
+- 전역 Alert/Confirm 다이얼로그(store 기반)
 - 로딩 / 에러 / 빈 데이터 상태 처리
 
 ## Mock API 구조
 
-- `src/api/*`: API 호출 함수
+- `src/api/*`: API 호출 함수 (dashboard/users/notices/videos)
 - `src/mocks/handlers.ts`: API 엔드포인트 mock 핸들러
-- `src/data/users.ts`: 더미 데이터 원천
+- `src/data/users.ts`, `src/data/admin.ts`: 더미 데이터 원천
 - `public/mockServiceWorker.js`: MSW 서비스워커
 
 ## 실행
