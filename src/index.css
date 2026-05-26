@@ -1,0 +1,111 @@
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: var(--app-font-family, 'Pretendard', 'Noto Sans KR', sans-serif);
+    overflow-x: hidden;
+    background-color: #f8f7fa;
+  }
+
+  html[data-theme='dark'] body {
+    background-color: #151521;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    appearance: none;
+    border-radius: 0;
+  }
+
+  button:focus,
+  button:focus-visible,
+  input:focus,
+  input:focus-visible,
+  select:focus,
+  select:focus-visible,
+  textarea:focus,
+  textarea:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  button {
+    white-space: nowrap;
+  }
+
+  input,
+  textarea {
+    user-select: auto;
+  }
+
+  a {
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+  }
+
+  #root {
+    min-height: 100%;
+    margin: 0 auto;
+    position: relative;
+    background-color: inherit;
+  }
+
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    font-feature-settings: 'liga';
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+  }
+
+  .theme-switching,
+  .theme-switching *,
+  .theme-switching *::before,
+  .theme-switching *::after {
+    transition-property: color, background, background-color, border, border-color, fill, stroke !important;
+    transition-duration: 140ms !important;
+    transition-timing-function: ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .theme-switching,
+    .theme-switching *,
+    .theme-switching *::before,
+    .theme-switching *::after {
+      transition-duration: 0ms !important;
+    }
+  }
+}
+
+@layer components {
+  .btn-ui {
+    @apply inline-flex items-center justify-center rounded-md border px-3 text-sm;
+  }
+}
