@@ -1,19 +1,20 @@
 import dayjs from "dayjs";
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useParams } from "react-router-dom";
-import { AppCheckbox } from "../components/AppCheckbox";
-import { PageHeader } from "../components/PageHeader";
-import { TableContainer } from "../components/TableContainer";
+import { useParams } from "react-router-dom";
+import { AppCheckbox } from "../../components/AppCheckbox";
+import { PageHeader } from "../../components/PageHeader";
+import { TableContainer } from "../../components/TableContainer";
 import {
   useCreateSubtitleMutation,
   useDeleteSubtitleMutation,
   useDeleteSubtitlesMutation,
   useUpdateSubtitleMutation,
   useVideoDetailQuery,
-} from "../hooks/useVideosQuery";
-import { useDialogActions } from "../store/dialogStore";
-import type { SubtitlePayload, SubtitleTrack } from "../types/admin";
+} from "../../hooks/useVideosQuery";
+import { useDialogActions } from "../../store/dialogStore";
+import type { SubtitlePayload, SubtitleTrack } from "../../types/admin";
+import { SubtitleEditorModal } from "./components/SubtitleEditorModal";
 
 const PREVIEW_VIDEO_URL =
   "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
@@ -227,7 +228,6 @@ export function VideoDetailPage() {
   const [draftItems, setDraftItems] = useState<DraftSubtitleItem[]>([]);
 
   const [currentTime, setCurrentTime] = useState(0);
-  const previewVideoRef = useRef<HTMLVideoElement>(null);
   const modalInitialSnapshotRef = useRef<SubtitleModalSnapshot | null>(null);
 
   const video = detailQuery.data;
@@ -728,69 +728,31 @@ export function VideoDetailPage() {
   return (
     <section>
       <PageHeader
-        title={t("영상 상세 / 자막 관리")}
-        description={t("영상 정보 확인 및 자막 트랙 추가")}
+        title={t("자막 관리")}
+        description={t("언어별 자막을 등록하고 관리합니다.")}
       />
 
       <div className="mx-3 space-y-4 pb-8">
-        <div className="rounded-md bg-white p-5 shadow-md dark:bg-dark-surface">
-          {detailQuery.isLoading && (
-            <div className="grid animate-pulse gap-4 lg:grid-cols-[320px_1fr]">
-              <div className="h-[190px] w-full rounded-md bg-slate-100 dark:bg-slate-700/70" />
-              <div className="space-y-3">
-                <div className="h-6 w-2/3 rounded bg-slate-100 dark:bg-slate-700/70" />
-                <div className="h-4 w-5/6 rounded bg-slate-100 dark:bg-slate-700/70" />
-                <div className="h-4 w-4/6 rounded bg-slate-100 dark:bg-slate-700/70" />
-                <div className="h-8 w-24 rounded bg-slate-100 dark:bg-slate-700/70" />
-              </div>
+        {detailQuery.isLoading && (
+          <div className="rounded-md bg-white p-5 shadow-md dark:bg-dark-surface">
+            <div className="space-y-3 animate-pulse">
+              <div className="h-5 w-40 rounded bg-slate-100 dark:bg-slate-700/70" />
+              <div className="h-10 w-full rounded bg-slate-100 dark:bg-slate-700/70" />
+              <div className="h-10 w-full rounded bg-slate-100 dark:bg-slate-700/70" />
+              <div className="h-10 w-full rounded bg-slate-100 dark:bg-slate-700/70" />
             </div>
-          )}
+          </div>
+        )}
 
-          {detailQuery.isError && (
+        {detailQuery.isError && (
+          <div className="rounded-md bg-white p-5 shadow-md dark:bg-dark-surface">
             <p className="py-16 text-center text-sm text-rose-500">
               {t("영상 목록을 불러오지 못했습니다.")}
             </p>
-          )}
+          </div>
+        )}
 
-          {!detailQuery.isLoading && !detailQuery.isError && video && (
-            <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
-              <img
-                src={video.thumbnailUrl}
-                alt={video.title}
-                className="h-[190px] w-full rounded-md object-cover"
-              />
-              <div>
-                <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-                  {video.title}
-                </h2>
-                <p className="mt-2 text-sm text-slate-500 dark:text-slate-300">
-                  {video.description}
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-300">
-                  <span>{video.category}</span>
-                  <span>·</span>
-                  <span>{video.duration}</span>
-                  <span>·</span>
-                  <span>{video.views.toLocaleString()} views</span>
-                  <span>·</span>
-                  <span>
-                    {dayjs(video.updatedAt).format("YYYY.MM.DD HH:mm")}
-                  </span>
-                </div>
-                <div className="mt-4">
-                  <Link
-                    to="/videos"
-                    className="cursor-pointer rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-600 dark:border-dark-border dark:text-slate-200"
-                  >
-                    {t("목록으로")}
-                  </Link>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {video && (
+        {!detailQuery.isLoading && !detailQuery.isError && video && (
           <div className="rounded-md bg-white p-5 shadow-md dark:bg-dark-surface">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
@@ -978,254 +940,37 @@ export function VideoDetailPage() {
         )}
       </div>
 
-      {modalOpen && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 px-4"
-          onClick={closeModal}
-        >
-          <div
-            className="max-h-[92vh] w-[1200px] max-w-[calc(100vw-20px)] overflow-hidden rounded-md bg-white shadow-xl dark:bg-dark-surface"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-center border-b border-slate-200 px-5 py-3 dark:border-dark-border">
-              <strong className="text-base text-slate-700 dark:text-slate-100">
-                {editingSubtitleId ? t("자막 수정") : t("언어 추가")}
-              </strong>
-              <button
-                type="button"
-                className="ml-auto inline-flex size-7 cursor-pointer items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-dark-hover"
-                onClick={closeModal}
-              >
-                <span className="material-symbols-outlined text-lg">close</span>
-              </button>
-            </div>
-
-            <div className="scroll-custom-container max-h-[calc(92vh-58px)] overflow-y-auto p-5">
-              <div className="grid gap-5 xl:grid-cols-[1.15fr_1fr]">
-                <div>
-                  <div className="mb-2 text-sm font-semibold text-slate-600 dark:text-slate-200">
-                    {t("미리보기")}
-                  </div>
-                  <div className="relative overflow-hidden rounded-md bg-black">
-                    <video
-                      ref={previewVideoRef}
-                      controls
-                      autoPlay
-                      className="aspect-video w-full object-cover"
-                      poster={video?.thumbnailUrl}
-                      src={PREVIEW_VIDEO_URL}
-                      onTimeUpdate={(event) =>
-                        setCurrentTime(event.currentTarget.currentTime)
-                      }
-                    />
-                    {activePreviewTexts.length > 0 && (
-                      <div className="pointer-events-none absolute bottom-4 left-4 right-4 rounded bg-black/60 px-3 py-2 text-center text-sm font-semibold text-white">
-                        {activePreviewTexts.join(" / ")}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    <div>
-                      <div className="mb-1 text-xs text-slate-500 dark:text-slate-300">
-                        {t("언어")}
-                      </div>
-                      <select
-                        value={language}
-                        className="h-9 w-full cursor-pointer rounded-md border border-slate-200 px-3 text-sm dark:border-dark-border dark:bg-dark-surface-alt dark:text-slate-100"
-                        onChange={(event) => setLanguage(event.target.value)}
-                      >
-                        <option value="ko">{t("한국어")}</option>
-                        <option value="en">{t("English")}</option>
-                        <option value="ja">Japanese</option>
-                        <option value="zh">Chinese</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <div className="mb-1 text-xs text-slate-500 dark:text-slate-300">
-                        {t("자막 라벨")}
-                      </div>
-                      <input
-                        value={label}
-                        onChange={(event) => setLabel(event.target.value)}
-                        className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm dark:border-dark-border dark:bg-dark-surface-alt dark:text-slate-100"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-12">
-                    <div className="sm:col-span-3">
-                      <div className="mb-1 text-xs text-slate-500 dark:text-slate-300">
-                        {t("시작 시간")}
-                      </div>
-                      <input
-                        value={startTime}
-                        onChange={(event) =>
-                          setStartTime(
-                            formatTimeInput(event.target.value, useHourInput),
-                          )
-                        }
-                        className={`h-9 w-full rounded-md border px-3 text-sm dark:bg-dark-surface-alt dark:text-slate-100 ${
-                          liveTimeError
-                            ? "border-rose-400 dark:border-rose-400"
-                            : "border-slate-200 dark:border-dark-border"
-                        }`}
-                        placeholder={timePlaceholder}
-                      />
-                    </div>
-                    <div className="sm:col-span-3">
-                      <div className="mb-1 text-xs text-slate-500 dark:text-slate-300">
-                        {t("종료 시간")}
-                      </div>
-                      <input
-                        value={endTime}
-                        onChange={(event) =>
-                          setEndTime(
-                            formatTimeInput(event.target.value, useHourInput),
-                          )
-                        }
-                        className={`h-9 w-full rounded-md border px-3 text-sm dark:bg-dark-surface-alt dark:text-slate-100 ${
-                          liveTimeError
-                            ? "border-rose-400 dark:border-rose-400"
-                            : "border-slate-200 dark:border-dark-border"
-                        }`}
-                        placeholder={timePlaceholder}
-                      />
-                    </div>
-                    <div className="sm:col-span-5">
-                      <div className="mb-1 text-xs text-slate-500 dark:text-slate-300">
-                        {t("자막 문구")}
-                      </div>
-                      <input
-                        value={text}
-                        onChange={(event) => setText(event.target.value)}
-                        className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm dark:border-dark-border dark:bg-dark-surface-alt dark:text-slate-100"
-                      />
-                    </div>
-                    <div className="flex items-end sm:col-span-1 sm:justify-end">
-                      <button
-                        type="button"
-                        className="h-9 w-[72px] cursor-pointer rounded-md bg-main-color px-2 text-sm text-white"
-                        onClick={onUpsertDraftItem}
-                      >
-                        {editingDraftLocalId ? t("수정") : t("추가")}
-                      </button>
-                    </div>
-                  </div>
-
-                  <p className="text-[11px] text-slate-400 dark:text-slate-400">
-                    {t(
-                      "숫자만 입력해도 자동으로 시:분:초.밀리초 형식이 적용됩니다.",
-                    )}
-                  </p>
-
-                  {liveTimeError && (
-                    <p className="text-xs text-rose-500">{liveTimeError}</p>
-                  )}
-
-                  {draftItems.length > 0 && (
-                    <div className="max-h-56 overflow-y-auto rounded-md border border-slate-200 dark:border-dark-border">
-                      <table className="w-full text-xs">
-                        <colgroup>
-                          <col className="w-[56px]" />
-                          <col className="w-[110px]" />
-                          <col className="w-[110px]" />
-                          <col className="w-auto" />
-                          <col className="w-[88px]" />
-                        </colgroup>
-                        <thead className="bg-slate-50 text-slate-500 dark:bg-dark-surface-alt dark:text-slate-300">
-                          <tr>
-                            <th className="px-2 py-1 text-left">#</th>
-                            <th className="px-2 py-1 text-left">
-                              {t("시작 시간")}
-                            </th>
-                            <th className="px-2 py-1 text-left">
-                              {t("종료 시간")}
-                            </th>
-                            <th className="px-2 py-1 text-left">
-                              {t("자막 문구")}
-                            </th>
-                            <th className="px-2 py-1 text-right"></th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {draftItems.map((item, index) => (
-                            <tr
-                              key={item.localId}
-                              className="border-t border-slate-100 dark:border-dark-border"
-                            >
-                              <td className="px-2 py-1 text-slate-500 dark:text-slate-200">
-                                {index + 1}
-                              </td>
-                              <td className="px-2 py-1 text-slate-700 dark:text-slate-100">
-                                {formatTimeForInput(
-                                  item.startTime,
-                                  useHourInput,
-                                )}
-                              </td>
-                              <td className="px-2 py-1 text-slate-700 dark:text-slate-100">
-                                {formatTimeForInput(item.endTime, useHourInput)}
-                              </td>
-                              <td className="px-2 py-1 text-slate-700 dark:text-slate-100">
-                                {item.text}
-                              </td>
-                              <td className="px-2 py-1 text-right">
-                                <div className="flex items-center justify-end gap-1">
-                                  <button
-                                    type="button"
-                                    className="inline-flex size-6 cursor-pointer items-center justify-center rounded bg-indigo-500 text-white"
-                                    onClick={() => onStartEditDraftItem(item)}
-                                  >
-                                    <span className="material-symbols-outlined text-sm">
-                                      edit
-                                    </span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="inline-flex size-6 cursor-pointer items-center justify-center rounded bg-slate-500 text-white"
-                                    onClick={() =>
-                                      onDeleteDraftItem(item.localId)
-                                    }
-                                  >
-                                    <span className="material-symbols-outlined text-sm">
-                                      delete
-                                    </span>
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-
-                  <div className="flex justify-end gap-2 pt-1">
-                    <button
-                      type="button"
-                      className="cursor-pointer rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 dark:border-dark-border dark:text-slate-200"
-                      onClick={closeModal}
-                    >
-                      {t("취소")}
-                    </button>
-                    <button
-                      type="button"
-                      className="cursor-pointer rounded-md bg-main-color px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
-                      disabled={isSaving}
-                      onClick={onSaveSubtitle}
-                    >
-                      {t("저장")}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <SubtitleEditorModal
+        open={modalOpen}
+        title={editingSubtitleId ? t("자막 수정") : t("언어 추가")}
+        videoThumbnailUrl={video?.thumbnailUrl}
+        previewVideoUrl={PREVIEW_VIDEO_URL}
+        activePreviewTexts={activePreviewTexts}
+        language={language}
+        label={label}
+        startTime={startTime}
+        endTime={endTime}
+        text={text}
+        timePlaceholder={timePlaceholder}
+        liveTimeError={liveTimeError}
+        draftItems={draftItems}
+        editingDraftLocalId={editingDraftLocalId}
+        isSaving={isSaving}
+        onClose={closeModal}
+        onTimeUpdate={setCurrentTime}
+        onLanguageChange={setLanguage}
+        onLabelChange={setLabel}
+        onStartTimeChange={(value) =>
+          setStartTime(formatTimeInput(value, useHourInput))
+        }
+        onEndTimeChange={(value) => setEndTime(formatTimeInput(value, useHourInput))}
+        onTextChange={setText}
+        onUpsertDraftItem={onUpsertDraftItem}
+        onStartEditDraftItem={onStartEditDraftItem}
+        onDeleteDraftItem={onDeleteDraftItem}
+        onSave={onSaveSubtitle}
+        formatInputTime={(value) => formatTimeForInput(value, useHourInput)}
+      />
     </section>
   );
 }

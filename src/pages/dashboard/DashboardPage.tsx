@@ -1,8 +1,8 @@
 import dayjs from 'dayjs'
 import { useTranslation } from 'react-i18next'
-import { PageHeader } from '../components/PageHeader'
-import { useAppPreferences } from '../contexts/AppPreferencesContext'
-import { useDashboardSummaryQuery } from '../hooks/useDashboardSummaryQuery'
+import { PageHeader } from '../../components/PageHeader'
+import { useAppPreferences } from '../../contexts/AppPreferencesContext'
+import { useDashboardSummaryQuery } from '../../hooks/useDashboardSummaryQuery'
 
 function TrendChart({ signups }: { signups: Array<{ date: string; signups: number }> }) {
   if (signups.length === 0) {

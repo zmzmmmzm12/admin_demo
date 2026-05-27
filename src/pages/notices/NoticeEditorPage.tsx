@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
-import { MarkdownEditor } from "../components/MarkdownEditor";
-import { PageHeader } from "../components/PageHeader";
-import { useAppPreferences } from "../contexts/AppPreferencesContext";
+import { MarkdownEditor } from "../../components/MarkdownEditor";
+import { PageHeader } from "../../components/PageHeader";
+import { useAppPreferences } from "../../contexts/AppPreferencesContext";
 import {
   useNoticeDetailQuery,
   useSaveNoticeMutation,
-} from "../hooks/useNoticesQuery";
-import { useDialogActions } from "../store/dialogStore";
-import type { NoticeStatus } from "../types/admin";
+} from "../../hooks/useNoticesQuery";
+import { useDialogActions } from "../../store/dialogStore";
+import type { NoticeStatus } from "../../types/admin";
 
 interface NoticeEditorFormValue {
   title: string;
@@ -280,15 +280,15 @@ function NoticeEditorForm({ noticeId, initialValue }: NoticeEditorFormProps) {
 // import { useEffect, useState } from "react";
 // import { useTranslation } from "react-i18next";
 // import { useNavigate, useParams } from "react-router-dom";
-// import { MarkdownEditor } from "../components/MarkdownEditor";
-// import { PageHeader } from "../components/PageHeader";
-// import { useAppPreferences } from "../contexts/AppPreferencesContext";
+// import { MarkdownEditor } from "../../components/MarkdownEditor";
+// import { PageHeader } from "../../components/PageHeader";
+// import { useAppPreferences } from "../../contexts/AppPreferencesContext";
 // import {
 //   useNoticeDetailQuery,
 //   useSaveNoticeMutation,
-// } from "../hooks/useNoticesQuery";
-// import { useDialogActions } from "../store/dialogStore";
-// import type { NoticeStatus } from "../types/admin";
+// } from "../../hooks/useNoticesQuery";
+// import { useDialogActions } from "../../store/dialogStore";
+// import type { NoticeStatus } from "../../types/admin";
 
 // export function NoticeEditorPage() {
 //   const { noticeId } = useParams<{ noticeId?: string }>();

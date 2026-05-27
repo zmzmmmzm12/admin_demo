@@ -1,9 +1,9 @@
 import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
-import { StatusBadge } from "../components/StatusBadge";
-import { useAppPreferences } from "../contexts/AppPreferencesContext";
-import { useUserDetailQuery } from "../hooks/useUsersQuery";
+import { StatusBadge } from "../../components/StatusBadge";
+import { useAppPreferences } from "../../contexts/AppPreferencesContext";
+import { useUserDetailQuery } from "../../hooks/useUsersQuery";
 
 const roleLabelKey = {
   super: "슈퍼관리자",

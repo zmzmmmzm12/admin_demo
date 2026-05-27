@@ -3,9 +3,9 @@ import MDEditor from '@uiw/react-md-editor'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { PageHeader } from '../components/PageHeader'
-import { useAppPreferences } from '../contexts/AppPreferencesContext'
-import { useNoticeDetailQuery } from '../hooks/useNoticesQuery'
+import { PageHeader } from '../../components/PageHeader'
+import { useAppPreferences } from '../../contexts/AppPreferencesContext'
+import { useNoticeDetailQuery } from '../../hooks/useNoticesQuery'
 
 export function NoticeDetailPage() {
   const { noticeId } = useParams<{ noticeId: string }>()

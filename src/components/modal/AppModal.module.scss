@@ -1,0 +1,44 @@
+.container {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  background-color: rgba(0, 0, 0, 0.75);
+
+  .wrapper {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    min-height: 100%;
+    pointer-events: none;
+
+    .inner {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      width: 100%;
+      min-height: 100%;
+      padding: 1rem;
+      box-sizing: border-box;
+      pointer-events: none;
+
+      .content {
+        position: relative;
+        width: 100%;
+        max-height: 100%;
+        margin-top: auto;
+        margin-bottom: auto;
+
+        > div {
+          pointer-events: auto;
+        }
+      }
+    }
+  }
+}

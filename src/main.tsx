@@ -5,7 +5,7 @@ import App from './App'
 import { DialogRenderer } from './components/dialog/DialogRenderer'
 import { AppPreferencesProvider } from './contexts/AppPreferencesContext'
 import './i18n'
-import './index.css'
+import './index.scss'
 
 const queryClient = new QueryClient({
   defaultOptions: {

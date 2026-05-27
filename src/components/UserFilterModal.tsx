@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AppModal } from "./modal/AppModal";
 import type { UserRole, UserStatus } from "../types/user";
 
 export interface UserFilterValues {
@@ -75,14 +76,8 @@ export function UserFilterModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-3"
-      onClick={onClose}
-    >
-      <div
-        className="relative flex w-[520px] max-w-[calc(100vw-20px)] flex-col rounded-md bg-white shadow-lg dark:bg-dark-surface"
-        onClick={(event) => event.stopPropagation()}
-      >
+    <AppModal open={open} onClose={onClose} zIndex={95}>
+      <div className="relative mx-auto flex w-[520px] max-w-[calc(100vw-20px)] flex-col rounded-md bg-white shadow-lg dark:bg-dark-surface">
         <div className="flex items-center justify-between border-b border-slate-100 px-1 text-base font-semibold text-slate-700 dark:border-dark-border dark:text-slate-100">
           <div className="px-3 py-3">{t("필터")}</div>
           <button
@@ -225,6 +220,6 @@ export function UserFilterModal({
           </button>
         </div>
       </div>
-    </div>
+    </AppModal>
   );
 }

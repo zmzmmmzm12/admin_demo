@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { type FormEvent, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { PageHeader } from "../components/PageHeader";
+import { PageHeader } from "../../components/PageHeader";
 
 type LiveStatus = "online" | "offline" | "issue";
 interface StreamItem {

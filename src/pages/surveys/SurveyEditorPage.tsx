@@ -4,20 +4,20 @@ import DatePickerModule from "react-multi-date-picker";
 import DateObject from "react-date-object";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
-import { AppCheckbox } from "../components/AppCheckbox";
-import { PageHeader } from "../components/PageHeader";
+import { AppCheckbox } from "../../components/AppCheckbox";
+import { PageHeader } from "../../components/PageHeader";
 import {
   useSaveSurveyMutation,
   useSurveyDetailQuery,
-} from "../hooks/useSurveysQuery";
-import { useDialogActions } from "../store/dialogStore";
+} from "../../hooks/useSurveysQuery";
+import { useDialogActions } from "../../store/dialogStore";
 import type {
   SurveyQuestion,
   SurveyQuestionType,
   SurveySavePayload,
   SurveyStatus,
-} from "../types/admin";
-import { getDatePickerLocale } from "../utils/datePickerLocale";
+} from "../../types/admin";
+import { getDatePickerLocale } from "../../utils/datePickerLocale";
 
 const DatePicker =
   (DatePickerModule as unknown as { default?: typeof DatePickerModule })

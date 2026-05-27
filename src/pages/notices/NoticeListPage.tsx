@@ -1,53 +1,52 @@
 import dayjs from "dayjs";
 import { type FormEvent, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useSearchParams } from "react-router-dom";
-import { AppCheckbox } from "../components/AppCheckbox";
-import { PageHeader } from "../components/PageHeader";
-import { Pagination } from "../components/Pagination";
-import { TableContainer } from "../components/TableContainer";
-import { useAppPreferences } from "../contexts/AppPreferencesContext";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { AppCheckbox } from "../../components/AppCheckbox";
+import { PageHeader } from "../../components/PageHeader";
+import { Pagination } from "../../components/Pagination";
+import { TableContainer } from "../../components/TableContainer";
 import {
-  useDeleteVideoMutation,
-  useDeleteVideosMutation,
-  useVideosQuery,
-} from "../hooks/useVideosQuery";
-import { useDialogActions } from "../store/dialogStore";
-import type { VideoSearchParams } from "../types/admin";
+  useDeleteNoticeMutation,
+  useDeleteNoticesMutation,
+  useNoticesQuery,
+} from "../../hooks/useNoticesQuery";
+import { NoticePreviewModal } from "./components/NoticePreviewModal";
+import { useDialogActions } from "../../store/dialogStore";
+import type { NoticeSearchParams } from "../../types/admin";
 
-const PREVIEW_VIDEO_URL =
-  "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
+const PAGE_SIZE = 10;
 
-const DEFAULT_VIDEO_PARAMS: VideoSearchParams = {
+const DEFAULT_NOTICE_PARAMS: NoticeSearchParams = {
   page: 1,
-  pageSize: 10,
+  pageSize: PAGE_SIZE,
   keyword: "",
   status: "all",
 };
 
-function parseVideoSearchParams(
+function parseNoticeSearchParams(
   searchParams: URLSearchParams,
-): VideoSearchParams {
+): NoticeSearchParams {
   const page = Number(searchParams.get("page") ?? "1");
-  const pageSize = Number(searchParams.get("pageSize") ?? "10");
+  const pageSize = Number(searchParams.get("pageSize") ?? String(PAGE_SIZE));
   const keyword = searchParams.get("keyword") ?? "";
   const statusRaw = searchParams.get("status") ?? "all";
 
-  const status: VideoSearchParams["status"] =
-    statusRaw === "ready" || statusRaw === "encoding" || statusRaw === "blocked"
-      ? statusRaw
-      : "all";
+  const status: NoticeSearchParams["status"] =
+    statusRaw === "published" || statusRaw === "draft" ? statusRaw : "all";
 
   return {
     page: Number.isFinite(page) && page > 0 ? Math.floor(page) : 1,
     pageSize:
-      Number.isFinite(pageSize) && pageSize > 0 ? Math.floor(pageSize) : 10,
+      Number.isFinite(pageSize) && pageSize > 0
+        ? Math.floor(pageSize)
+        : PAGE_SIZE,
     keyword,
     status,
   };
 }
 
-function buildVideoSearchParams(params: VideoSearchParams) {
+function buildNoticeSearchParams(params: NoticeSearchParams) {
   const next = new URLSearchParams();
 
   next.set("page", String(params.page));
@@ -58,9 +57,9 @@ function buildVideoSearchParams(params: VideoSearchParams) {
   return next;
 }
 
-function areVideoSearchParamsEqual(
-  left: VideoSearchParams,
-  right: VideoSearchParams,
+function areNoticeSearchParamsEqual(
+  left: NoticeSearchParams,
+  right: NoticeSearchParams,
 ) {
   return (
     left.page === right.page &&
@@ -70,46 +69,47 @@ function areVideoSearchParamsEqual(
   );
 }
 
-export function VideoListPage() {
-  const { locale } = useAppPreferences();
+export function NoticeListPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [urlSearchParams, setUrlSearchParams] = useSearchParams();
   const { openAlert, openConfirm } = useDialogActions();
 
   const params = useMemo(
-    () => parseVideoSearchParams(urlSearchParams),
+    () => parseNoticeSearchParams(urlSearchParams),
     [urlSearchParams],
   );
 
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  const numberLocale = locale === "ko" ? "ko-KR" : "en-US";
+  const noticesQuery = useNoticesQuery(params);
+  const deleteMutation = useDeleteNoticeMutation();
+  const deleteManyMutation = useDeleteNoticesMutation();
 
-  const videosQuery = useVideosQuery(params);
-  const deleteVideoMutation = useDeleteVideoMutation();
-  const deleteVideosMutation = useDeleteVideosMutation();
+  const list = noticesQuery.data?.data ?? [];
+  const totalCount = noticesQuery.data?.totalCount ?? 0;
 
-  const list = videosQuery.data?.data ?? [];
-  const totalCount = videosQuery.data?.totalCount ?? 0;
-
-  const visibleVideoIds = useMemo(() => {
-    return new Set(list.map((video) => video.id));
+  const visibleNoticeIds = useMemo(() => {
+    return new Set(list.map((notice) => notice.id));
   }, [list]);
 
   const validSelectedIds = useMemo(() => {
-    return selectedIds.filter((id) => visibleVideoIds.has(id));
-  }, [selectedIds, visibleVideoIds]);
+    return selectedIds.filter((id) => visibleNoticeIds.has(id));
+  }, [selectedIds, visibleNoticeIds]);
 
   const isAllSelected =
     list.length > 0 &&
-    list.every((video) => validSelectedIds.includes(video.id));
+    list.every((notice) => validSelectedIds.includes(notice.id));
 
-  const updateSearchParams = (nextParams: VideoSearchParams) => {
-    if (areVideoSearchParamsEqual(params, nextParams)) {
+  const title = useMemo(() => t("공지사항 관리"), [t]);
+
+  const updateSearchParams = (nextParams: NoticeSearchParams) => {
+    if (areNoticeSearchParamsEqual(params, nextParams)) {
       return;
     }
 
-    setUrlSearchParams(buildVideoSearchParams(nextParams), { replace: true });
+    setUrlSearchParams(buildNoticeSearchParams(nextParams), { replace: true });
   };
 
   const onSubmitSearch = (event: FormEvent<HTMLFormElement>) => {
@@ -126,35 +126,34 @@ export function VideoListPage() {
   };
 
   const onResetFilters = () => {
-    updateSearchParams(DEFAULT_VIDEO_PARAMS);
+    updateSearchParams(DEFAULT_NOTICE_PARAMS);
   };
 
   return (
     <section>
       <PageHeader
-        title={t("영상 관리")}
-        description={t("영상 목록 조회와 자막 추가/관리 기능을 제공합니다.")}
+        title={title}
+        description={t("등록/수정/상세 확인이 가능한 공지 관리 화면입니다.")}
       />
 
-      <div className="mx-3 rounded-md bg-white shadow-md dark:bg-dark-surface">
-        <div className="flex flex-wrap items-center justify-between gap-3 p-5">
+      <div className="mx-3 mb-8 rounded-md bg-white shadow-md dark:bg-dark-surface">
+        <div className="flex flex-wrap items-center justify-between gap-2 p-5">
           <form className="flex items-center gap-2" onSubmit={onSubmitSearch}>
             <div className="relative">
               <select
-                value={params.status}
                 className="h-9 cursor-pointer appearance-none rounded-md border border-slate-200 bg-white px-3 pr-8 text-sm text-slate-600 dark:border-dark-border dark:bg-dark-surface-alt dark:text-slate-100"
+                value={params.status}
                 onChange={(event) =>
                   updateSearchParams({
                     ...params,
                     page: 1,
-                    status: event.target.value as VideoSearchParams["status"],
+                    status: event.target.value as NoticeSearchParams["status"],
                   })
                 }
               >
                 <option value="all">{t("전체 상태")}</option>
-                <option value="ready">{t("배포 가능")}</option>
-                <option value="encoding">{t("인코딩 중")}</option>
-                <option value="blocked">{t("게시 보류")}</option>
+                <option value="published">{t("게시")}</option>
+                <option value="draft">{t("임시저장")}</option>
               </select>
               <span className="material-symbols-outlined pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-sm text-slate-500 dark:text-slate-400">
                 expand_more
@@ -165,7 +164,7 @@ export function VideoListPage() {
               key={params.keyword}
               name="keyword"
               defaultValue={params.keyword}
-              placeholder={t("영상 제목")}
+              placeholder={t("제목, 카테고리, 작성자")}
               className="h-9 w-[240px] rounded-md border border-slate-200 px-3 text-sm text-slate-700 dark:border-dark-border dark:bg-dark-surface-alt dark:text-slate-100"
             />
 
@@ -182,7 +181,7 @@ export function VideoListPage() {
             </button>
           </form>
 
-          {validSelectedIds.length > 0 && (
+          {validSelectedIds.length > 0 ? (
             <div className="flex items-center gap-2">
               <span className="text-sm text-slate-500 dark:text-slate-300">
                 {t("{count}개 선택됨", { count: validSelectedIds.length })}
@@ -190,10 +189,10 @@ export function VideoListPage() {
               <button
                 type="button"
                 className="inline-flex cursor-pointer items-center gap-1 rounded-md bg-rose-500 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={deleteVideosMutation.isPending}
+                disabled={deleteManyMutation.isPending}
                 onClick={() =>
-                  openConfirm(t("선택한 영상을 모두 삭제하시겠습니까?"), () =>
-                    deleteVideosMutation.mutate(validSelectedIds, {
+                  openConfirm(t("공지사항을 삭제하시겠습니까?"), () =>
+                    deleteManyMutation.mutate(validSelectedIds, {
                       onSuccess: () => {
                         setSelectedIds([]);
                         openAlert(t("처리되었습니다."));
@@ -210,21 +209,27 @@ export function VideoListPage() {
                 {t("삭제")}
               </button>
             </div>
+          ) : (
+            <button
+              type="button"
+              className="cursor-pointer rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white"
+              onClick={() => navigate("/notices/new")}
+            >
+              {t("공지사항 등록")}
+            </button>
           )}
         </div>
 
-        <TableContainer tableClassName="w-full min-w-[1000px]">
+        <TableContainer tableClassName="w-full min-w-[980px]">
           <colgroup>
             <col className="w-[68px]" />
             <col className="w-[80px]" />
-            <col className="w-[120px]" />
-            <col className="w-[220px]" />
-            <col className="w-[340px] min-w-[220px]" />
+            <col className="w-[110px]" />
             <col className="w-[140px]" />
-            <col className="w-[120px]" />
-            <col className="w-[120px]" />
-            <col className="w-[170px]" />
-            <col className="w-[220px]" />
+            <col className="w-auto" />
+            <col className="w-[160px]" />
+            <col className="w-[160px]" />
+            <col className="w-[130px]" />
           </colgroup>
 
           <thead className="text-xs text-slate-400 border-b border-slate-100 dark:border-dark-border dark:text-slate-300 text-center">
@@ -232,9 +237,11 @@ export function VideoListPage() {
               <th className="align-middle px-4 py-3">
                 <AppCheckbox
                   checked={isAllSelected}
-                  ariaLabel="select all videos"
+                  ariaLabel="select all notices"
                   onChange={(checked) =>
-                    setSelectedIds(checked ? list.map((video) => video.id) : [])
+                    setSelectedIds(
+                      checked ? list.map((notice) => notice.id) : [],
+                    )
                   }
                 />
               </th>
@@ -243,35 +250,25 @@ export function VideoListPage() {
                 {t("상태")}
               </th>
               <th className="align-middle px-6 py-3 whitespace-nowrap">
-                {t("썸네일")}
-              </th>
-              <th className="align-middle px-6 py-3 whitespace-nowrap text-left">
-                {t("영상")}
-              </th>
-              <th className="align-middle px-6 py-3 whitespace-nowrap">
                 {t("카테고리")}
               </th>
+              <th className="align-middle px-4 py-3 text-left">{t("제목")}</th>
               <th className="align-middle px-6 py-3 whitespace-nowrap">
-                {t("길이")}
-              </th>
-              <th className="align-middle px-6 py-3 whitespace-nowrap">
-                {t("조회수")}
+                {t("작성자")}
               </th>
               <th className="align-middle px-6 py-3 whitespace-nowrap">
                 {t("수정일")}
               </th>
-              <th className="align-middle px-6 py-3 whitespace-nowrap">
-                {t("관리")}
-              </th>
+              <th className="align-middle px-4 py-3 text-right" />
             </tr>
           </thead>
 
           <tbody>
-            {videosQuery.isLoading && (
+            {noticesQuery.isLoading && (
               <>
                 {Array.from({ length: 6 }).map((_, skeletonIndex) => (
                   <tr
-                    key={`videos-skeleton-${skeletonIndex}`}
+                    key={`notices-skeleton-${skeletonIndex}`}
                     className="border-b border-slate-100 dark:border-dark-border"
                   >
                     <td className="px-4 py-3">
@@ -284,26 +281,20 @@ export function VideoListPage() {
                       <div className="mx-auto h-6 w-16 animate-pulse rounded-full bg-slate-100 dark:bg-slate-700/70" />
                     </td>
                     <td className="px-6 py-3">
-                      <div className="mx-auto h-16 w-28 animate-pulse rounded bg-slate-100 dark:bg-slate-700/70" />
+                      <div className="mx-auto h-4 w-16 animate-pulse rounded bg-slate-100 dark:bg-slate-700/70" />
                     </td>
-                    <td className="px-6 py-3">
+                    <td className="px-4 py-3">
                       <div className="h-4 w-4/5 animate-pulse rounded bg-slate-100 dark:bg-slate-700/70" />
                     </td>
                     <td className="px-6 py-3">
                       <div className="mx-auto h-4 w-16 animate-pulse rounded bg-slate-100 dark:bg-slate-700/70" />
                     </td>
                     <td className="px-6 py-3">
-                      <div className="mx-auto h-4 w-12 animate-pulse rounded bg-slate-100 dark:bg-slate-700/70" />
-                    </td>
-                    <td className="px-6 py-3">
-                      <div className="mx-auto h-4 w-14 animate-pulse rounded bg-slate-100 dark:bg-slate-700/70" />
-                    </td>
-                    <td className="px-6 py-3">
                       <div className="mx-auto h-4 w-28 animate-pulse rounded bg-slate-100 dark:bg-slate-700/70" />
                     </td>
-                    <td className="px-6 py-3">
+                    <td className="px-4 py-3">
                       <div className="ml-auto flex w-fit items-center gap-1">
-                        <div className="h-7 w-16 animate-pulse rounded-md bg-slate-100 dark:bg-slate-700/70" />
+                        <div className="h-7 w-7 animate-pulse rounded-md bg-slate-100 dark:bg-slate-700/70" />
                         <div className="h-7 w-7 animate-pulse rounded-md bg-slate-100 dark:bg-slate-700/70" />
                       </div>
                     </td>
@@ -312,21 +303,21 @@ export function VideoListPage() {
               </>
             )}
 
-            {videosQuery.isError && (
+            {noticesQuery.isError && (
               <tr>
-                <td colSpan={10} className="px-6 py-20">
+                <td colSpan={8} className="px-6 py-20">
                   <div className="w-full flex items-center justify-center text-sm text-rose-500 dark:text-rose-300">
-                    {t("영상 목록을 불러오지 못했습니다.")}
+                    {t("공지사항을 불러오지 못했습니다.")}
                   </div>
                 </td>
               </tr>
             )}
 
-            {!videosQuery.isLoading &&
-              !videosQuery.isError &&
+            {!noticesQuery.isLoading &&
+              !noticesQuery.isError &&
               list.length === 0 && (
                 <tr className="border-b border-slate-100 dark:border-dark-border">
-                  <td colSpan={10} className="px-6 py-20">
+                  <td className="px-6 py-20" colSpan={8}>
                     <div className="w-full flex items-center justify-center text-sm text-slate-500 dark:text-slate-300">
                       {t("조회된 데이터가 없습니다.")}
                     </div>
@@ -334,148 +325,115 @@ export function VideoListPage() {
                 </tr>
               )}
 
-            {!videosQuery.isLoading &&
-              !videosQuery.isError &&
-              list.map((video, index) => (
+            {!noticesQuery.isLoading &&
+              !noticesQuery.isError &&
+              list.map((notice, index) => (
                 <tr
-                  key={video.id}
+                  key={notice.id}
                   className="border-b border-slate-100 dark:border-dark-border"
                 >
                   <td className="align-middle px-4 py-3">
                     <div className="flex items-center justify-center">
                       <AppCheckbox
-                        checked={validSelectedIds.includes(video.id)}
-                        ariaLabel={`select video ${video.id}`}
+                        checked={validSelectedIds.includes(notice.id)}
+                        ariaLabel={`select notice ${notice.id}`}
                         onChange={(checked) =>
                           setSelectedIds((prev) =>
                             checked
-                              ? prev.includes(video.id)
+                              ? prev.includes(notice.id)
                                 ? prev
-                                : [...prev, video.id]
-                              : prev.filter((id) => id !== video.id),
+                                : [...prev, notice.id]
+                              : prev.filter((id) => id !== notice.id),
                           )
                         }
                       />
                     </div>
                   </td>
 
-                  <td className="align-middle px-6 py-3">
+                  <td className="align-middle px-4 py-3">
                     <div className="text-center text-sm text-slate-700 whitespace-nowrap dark:text-white">
                       {(params.page - 1) * params.pageSize + index + 1}
                     </div>
                   </td>
 
-                  <td className="align-middle px-6 py-3">
+                  <td className="align-middle px-4 py-3">
                     <div className="flex items-center justify-center">
                       <span
-                        className={`inline-flex min-w-[72px] items-center justify-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs ${
-                          video.status === "ready"
+                        className={`inline-flex min-w-[64px] items-center justify-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs ${
+                          notice.status === "published"
                             ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300"
-                            : video.status === "encoding"
-                              ? "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300"
-                              : "bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300"
+                            : "bg-slate-100 text-slate-500 dark:bg-dark-surface-alt dark:text-slate-300"
                         }`}
                       >
-                        {video.status === "ready"
-                          ? t("배포 가능")
-                          : video.status === "encoding"
-                            ? t("인코딩 중")
-                            : t("게시 보류")}
+                        {notice.status === "published"
+                          ? t("게시")
+                          : t("임시저장")}
                       </span>
                     </div>
                   </td>
 
-                  <td className="align-middle px-6 py-3">
-                    <div className="flex items-center justify-center">
-                      <div className="group relative h-16 w-28 overflow-hidden rounded bg-black">
-                        <img
-                          src={video.thumbnailUrl}
-                          alt={video.title}
-                          className="h-full w-full object-cover transition-opacity duration-200 group-hover:opacity-0"
-                        />
-                        <video
-                          className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-                          poster={video.thumbnailUrl}
-                          muted
-                          loop
-                          playsInline
-                          preload="none"
-                          onMouseEnter={(event) => {
-                            void event.currentTarget.play();
-                          }}
-                          onMouseLeave={(event) => {
-                            event.currentTarget.pause();
-                            event.currentTarget.currentTime = 0;
-                          }}
-                        >
-                          <source src={PREVIEW_VIDEO_URL} type="video/mp4" />
-                        </video>
-                      </div>
-                    </div>
-                  </td>
-
-                  <td className="align-middle px-6 py-3">
-                    <div className="flex w-full items-center justify-start">
-                      <span className="min-w-[240px] whitespace-normal break-words text-left text-sm leading-5 text-slate-700 dark:text-white">
-                        {video.title}
-                      </span>
-                    </div>
-                  </td>
-
-                  <td className="align-middle px-6 py-3">
+                  <td className="align-middle px-4 py-3">
                     <div className="text-center text-sm text-slate-700 whitespace-nowrap dark:text-white">
-                      {video.category}
+                      {notice.category}
                     </div>
                   </td>
 
-                  <td className="align-middle px-6 py-3">
+                  <td className="align-middle px-4 py-3 text-left">
+                    <div className="min-w-[240px] whitespace-normal break-words text-left text-sm leading-5 text-slate-700 dark:text-white">
+                      <button
+                        type="button"
+                        className="cursor-pointer text-sky-500"
+                        onClick={() => setPreviewId(notice.id)}
+                      >
+                        {notice.title}
+                      </button>
+                    </div>
+                  </td>
+
+                  <td className="align-middle px-4 py-3">
                     <div className="text-center text-sm text-slate-700 whitespace-nowrap dark:text-white">
-                      {video.duration}
+                      {notice.author}
                     </div>
                   </td>
 
-                  <td className="align-middle px-6 py-3">
+                  <td className="align-middle px-4 py-3">
                     <div className="text-center text-sm text-slate-700 whitespace-nowrap dark:text-white">
-                      {video.views.toLocaleString(numberLocale)}
+                      {dayjs(notice.updatedAt).format("YYYY.MM.DD HH:mm")}
                     </div>
                   </td>
 
-                  <td className="align-middle px-6 py-3">
-                    <div className="text-center text-sm text-slate-700 whitespace-nowrap dark:text-white">
-                      {dayjs(video.updatedAt).format("YYYY.MM.DD HH:mm")}
-                    </div>
-                  </td>
-
-                  <td className="align-middle px-6 py-3">
+                  <td className="align-middle px-4 py-3">
                     <div className="flex items-center justify-center">
                       <div className="flex w-full flex-nowrap items-center justify-end gap-1 whitespace-nowrap">
-                        <Link
-                          to={`/videos/${video.id}`}
-                          className="cursor-pointer whitespace-nowrap rounded-md bg-main-color px-3 py-1.5 text-xs text-white"
+                        <button
+                          type="button"
+                          className="group relative flex size-7 cursor-pointer items-center justify-center rounded-md bg-indigo-500 text-slate-50"
+                          onClick={() => navigate(`/notices/${notice.id}/edit`)}
                         >
-                          {t("자막 관리")}
-                        </Link>
+                          <span className="material-symbols-outlined text-lg">
+                            edit
+                          </span>
+                          <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-black px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                            {t("수정")}
+                          </span>
+                        </button>
 
                         <button
                           type="button"
                           className="group relative flex size-7 cursor-pointer items-center justify-center rounded-md bg-slate-400 text-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-500"
-                          disabled={deleteVideoMutation.isPending}
+                          disabled={deleteMutation.isPending}
                           onClick={() =>
-                            openConfirm(
-                              t("해당 영상을 삭제하시겠습니까?"),
-                              () =>
-                                deleteVideoMutation.mutate(video.id, {
-                                  onSuccess: () => {
-                                    setSelectedIds((prev) =>
-                                      prev.filter((id) => id !== video.id),
-                                    );
-                                    openAlert(t("처리되었습니다."));
-                                  },
-                                  onError: () =>
-                                    openAlert(
-                                      t("처리 중 오류가 발생했습니다."),
-                                    ),
-                                }),
+                            openConfirm(t("공지사항을 삭제하시겠습니까?"), () =>
+                              deleteMutation.mutate(notice.id, {
+                                onSuccess: () => {
+                                  setSelectedIds((prev) =>
+                                    prev.filter((id) => id !== notice.id),
+                                  );
+                                  openAlert(t("처리되었습니다."));
+                                },
+                                onError: () =>
+                                  openAlert(t("처리 중 오류가 발생했습니다.")),
+                              }),
                             )
                           }
                         >
@@ -501,6 +459,11 @@ export function VideoListPage() {
           movePage={(page) => updateSearchParams({ ...params, page })}
         />
       </div>
+
+      <NoticePreviewModal
+        noticeId={previewId}
+        onClose={() => setPreviewId(null)}
+      />
     </section>
   );
 }

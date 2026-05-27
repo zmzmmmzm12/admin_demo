@@ -1,14 +1,20 @@
-import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { AppModal } from '../modal/AppModal'
 import { useDialogStore } from '../../store/dialogStore'
 
-function ModalShell({ children }: { children: React.ReactNode }) {
+function ModalShell({
+  open,
+  children,
+}: {
+  open: boolean
+  children: React.ReactNode
+}) {
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/35 px-3">
-      <div className="relative w-[320px] max-w-[calc(100vw-20px)] rounded-md bg-white shadow-lg dark:bg-slate-800">
+    <AppModal open={open} closeOnBackdrop={false} zIndex={130}>
+      <div className="relative mx-auto w-[320px] max-w-[calc(100vw-20px)] rounded-md bg-white shadow-lg dark:bg-slate-800">
         {children}
       </div>
-    </div>
+    </AppModal>
   )
 }
 
@@ -22,25 +28,10 @@ export function DialogRenderer() {
   const checkConfirm = useDialogStore((state) => state.checkConfirm)
   const closeConfirm = useDialogStore((state) => state.closeConfirm)
 
-  const anyOpen = alert.open || confirm.open
-
-  useEffect(() => {
-    if (!anyOpen) {
-      return
-    }
-
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-
-    return () => {
-      document.body.style.overflow = previousOverflow
-    }
-  }, [anyOpen])
-
   return (
     <>
       {alert.open && (
-        <ModalShell>
+        <ModalShell open={alert.open}>
           <div className="absolute -top-6 left-[calc(50%-24px)] flex items-center justify-center rounded-full border-4 border-indigo-500 bg-white p-2 text-indigo-500 dark:bg-slate-800">
             <span className="material-symbols-outlined">priority_high</span>
           </div>
@@ -62,7 +53,7 @@ export function DialogRenderer() {
       )}
 
       {confirm.open && (
-        <ModalShell>
+        <ModalShell open={confirm.open}>
           <div className="absolute -top-6 left-[calc(50%-24px)] flex items-center justify-center rounded-full border-4 border-indigo-500 bg-white p-2 text-indigo-500 dark:bg-slate-800">
             <span className="material-symbols-outlined">question_mark</span>
           </div>
