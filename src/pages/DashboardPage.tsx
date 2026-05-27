@@ -1,4 +1,5 @@
 import dayjs from 'dayjs'
+import { useTranslation } from 'react-i18next'
 import { PageHeader } from '../components/PageHeader'
 import { useAppPreferences } from '../contexts/AppPreferencesContext'
 import { useDashboardSummaryQuery } from '../hooks/useDashboardSummaryQuery'
@@ -47,21 +48,38 @@ function TrendChart({ signups }: { signups: Array<{ date: string; signups: numbe
 
 export function DashboardPage() {
   const summaryQuery = useDashboardSummaryQuery()
-  const { t, locale } = useAppPreferences()
+  const { locale } = useAppPreferences()
+  const { t } = useTranslation()
   const numberLocale = locale === 'ko' ? 'ko-KR' : 'en-US'
 
   if (summaryQuery.isLoading) {
     return (
-      <p className="mx-3 rounded-md border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 dark:border-dark-border dark:bg-dark-surface dark:text-slate-400">
-        {t('common.loadingDashboard')}
-      </p>
+      <section className="mx-3 space-y-4 pb-8">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <div
+              key={`dashboard-card-skeleton-${index}`}
+              className="h-28 animate-pulse rounded-md bg-slate-100 shadow-md dark:bg-slate-700/70"
+            />
+          ))}
+        </div>
+        <div className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
+          <div className="h-72 animate-pulse rounded-md bg-slate-100 shadow-md dark:bg-slate-700/70" />
+          <div className="h-72 animate-pulse rounded-md bg-slate-100 shadow-md dark:bg-slate-700/70" />
+        </div>
+        <div className="grid gap-4 xl:grid-cols-2">
+          <div className="h-64 animate-pulse rounded-md bg-slate-100 shadow-md dark:bg-slate-700/70" />
+          <div className="h-64 animate-pulse rounded-md bg-slate-100 shadow-md dark:bg-slate-700/70" />
+        </div>
+        <div className="h-52 animate-pulse rounded-md bg-slate-100 shadow-md dark:bg-slate-700/70" />
+      </section>
     )
   }
 
   if (summaryQuery.isError || !summaryQuery.data) {
     return (
       <p className="mx-3 rounded-md border border-rose-200 bg-rose-50 p-8 text-center text-sm text-rose-600 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
-        {t('common.errorDashboard')}
+        {t('대시보드 데이터를 불러오지 못했습니다.')}
       </p>
     )
   }
@@ -84,48 +102,48 @@ export function DashboardPage() {
 
   return (
     <section>
-      <PageHeader title={t('dashboard.title')} description={t('dashboard.description')} />
+      <PageHeader title={t('운영 대시보드')} description={t('회원 현황과 운영 상태를 빠르게 파악할 수 있는 요약 화면입니다.')} />
 
       <div className="mx-3 space-y-4 pb-8">
         <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
           <article className="rounded-md bg-white p-4 shadow-md dark:bg-dark-surface">
-            <p className="text-xs text-slate-500 dark:text-slate-400">{t('dashboard.totalUsers')}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t('전체 회원')}</p>
             <strong className="mt-2 block text-2xl font-bold text-slate-900 dark:text-slate-100">
               {summary.totalUsers.toLocaleString(numberLocale)}
             </strong>
           </article>
           <article className="rounded-md bg-white p-4 shadow-md dark:bg-dark-surface">
-            <p className="text-xs text-slate-500 dark:text-slate-400">{t('dashboard.activeUsers')}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t('활성 회원')}</p>
             <strong className="mt-2 block text-2xl font-bold text-emerald-600 dark:text-emerald-300">
               {summary.activeUsers.toLocaleString(numberLocale)}
             </strong>
           </article>
           <article className="rounded-md bg-white p-4 shadow-md dark:bg-dark-surface">
-            <p className="text-xs text-slate-500 dark:text-slate-400">{t('dashboard.pendingUsers')}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t('승인 대기')}</p>
             <strong className="mt-2 block text-2xl font-bold text-amber-500 dark:text-amber-300">
               {summary.pendingUsers.toLocaleString(numberLocale)}
             </strong>
           </article>
           <article className="rounded-md bg-white p-4 shadow-md dark:bg-dark-surface">
-            <p className="text-xs text-slate-500 dark:text-slate-400">{t('dashboard.suspendedUsers')}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t('정지 회원')}</p>
             <strong className="mt-2 block text-2xl font-bold text-rose-500 dark:text-rose-300">
               {summary.suspendedUsers.toLocaleString(numberLocale)}
             </strong>
           </article>
           <article className="rounded-md bg-gradient-to-r from-indigo-600 to-violet-600 p-4 text-white shadow-md">
-            <p className="text-xs text-white/80">{t('dashboard.monthlyTitle')}</p>
+            <p className="text-xs text-white/80">{t('이번 달 가입 추이')}</p>
             <strong className="mt-2 block text-2xl font-bold">
               +{summary.monthlySignups.toLocaleString(numberLocale)}
             </strong>
-            <p className="mt-1 text-xs text-white/90">{t('dashboard.monthlyGrowth')}</p>
+            <p className="mt-1 text-xs text-white/90">{t('전월 대비 12.4% 증가')}</p>
           </article>
         </section>
 
         <section className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
           <article className="rounded-md bg-white p-4 shadow-md dark:bg-dark-surface">
             <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t('dashboard.trendTitle')}</h2>
-              <span className="text-xs text-slate-400 dark:text-slate-500">{t('dashboard.last14Days')}</span>
+              <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t('일별 유입 추이')}</h2>
+              <span className="text-xs text-slate-400 dark:text-slate-500">{t('최근 14일')}</span>
             </div>
             <TrendChart signups={trend} />
             <div className="mt-2 flex justify-between text-[11px] text-slate-400 dark:text-slate-500">
@@ -135,7 +153,7 @@ export function DashboardPage() {
           </article>
 
           <article className="rounded-md bg-white p-4 shadow-md dark:bg-dark-surface">
-            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t('dashboard.channelTitle')}</h2>
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t('유입 채널 비중')}</h2>
             <div className="mt-4 flex items-center gap-4">
               <div
                 className="size-28 rounded-full"
@@ -161,7 +179,7 @@ export function DashboardPage() {
 
         <section className="grid gap-4 xl:grid-cols-2">
           <article className="rounded-md bg-white p-4 shadow-md dark:bg-dark-surface">
-            <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{t('dashboard.statusTitle')}</h2>
+            <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{t('회원 상태 비중')}</h2>
             <div className="space-y-3">
               {statusBreakdown.map((item) => {
                 const color =
@@ -176,10 +194,10 @@ export function DashboardPage() {
                     <div className="mb-1 flex justify-between text-xs text-slate-500 dark:text-slate-300">
                       <span>
                         {item.status === 'active'
-                          ? t('users.status.active')
+                          ? t('활성')
                           : item.status === 'pending'
-                            ? t('users.status.pending')
-                            : t('users.status.suspended')}
+                            ? t('대기')
+                            : t('정지')}
                       </span>
                       <strong className="text-slate-700 dark:text-slate-100">{ratio}%</strong>
                     </div>
@@ -193,7 +211,7 @@ export function DashboardPage() {
           </article>
 
           <article className="rounded-md bg-white p-4 shadow-md dark:bg-dark-surface">
-            <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{t('dashboard.tasksTitle')}</h2>
+            <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{t('운영 작업 현황')}</h2>
             <div className="space-y-2">
               {tasks.map((task) => (
                 <div
@@ -224,7 +242,7 @@ export function DashboardPage() {
         </section>
 
         <section className="rounded-md bg-white p-4 shadow-md dark:bg-dark-surface">
-          <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{t('dashboard.alertTitle')}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{t('운영 알림')}</h2>
           <div className="space-y-2">
             {alerts.map((alert) => (
               <article

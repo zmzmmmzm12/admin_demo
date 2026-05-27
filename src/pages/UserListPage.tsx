@@ -1,14 +1,16 @@
 import dayjs from "dayjs";
-import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { AppCheckbox } from "../components/AppCheckbox";
 import { PageHeader } from "../components/PageHeader";
 import { Pagination } from "../components/Pagination";
 import { StatusBadge } from "../components/StatusBadge";
+import { TableContainer } from "../components/TableContainer";
 import {
   UserFilterModal,
   type UserFilterValues,
 } from "../components/UserFilterModal";
-import { useAppPreferences } from "../contexts/AppPreferencesContext";
 import {
   useDeleteUserMutation,
   useDeleteUsersMutation,
@@ -16,22 +18,22 @@ import {
   useUsersQuery,
 } from "../hooks/useUsersQuery";
 import { useDialogActions } from "../store/dialogStore";
-import { useUserFilterStore } from "../store/useUserFilterStore";
 import type { UserStatus } from "../types/user";
+import type { UserRole, UserSearchParams } from "../types/user";
 import { downloadCsv } from "../utils/export";
 
 const PAGE_SIZE_OPTIONS = [10, 50, 100] as const;
 
 const roleLabelKey = {
-  super: "users.role.super",
-  manager: "users.role.manager",
-  operator: "users.role.operator",
+  super: "슈퍼관리자",
+  manager: "매니저",
+  operator: "운영자",
 } as const;
 
 const statusLabelKey = {
-  active: "users.status.active",
-  pending: "users.status.pending",
-  suspended: "users.status.suspended",
+  active: "활성",
+  pending: "대기",
+  suspended: "정지",
 } as const;
 
 const nextStatusMap: Record<UserStatus, UserStatus> = {
@@ -40,62 +42,135 @@ const nextStatusMap: Record<UserStatus, UserStatus> = {
   suspended: "active",
 };
 
-export function UserListPage() {
-  const navigate = useNavigate();
-  const {
-    page,
-    pageSize,
+function parseUserSearchParams(
+  searchParams: URLSearchParams,
+): UserSearchParams {
+  const page = Number(searchParams.get("page") ?? "1");
+  const pageSize = Number(searchParams.get("pageSize") ?? "10");
+  const searchFieldRaw = searchParams.get("searchField") ?? "id";
+  const statusRaw = searchParams.get("status") ?? "all";
+  const roleRaw = searchParams.get("role") ?? "all";
+  const keyword = searchParams.get("keyword") ?? "";
+
+  const searchField: UserSearchParams["searchField"] =
+    searchFieldRaw === "name" || searchFieldRaw === "email"
+      ? searchFieldRaw
+      : "id";
+
+  const status: UserSearchParams["status"] =
+    statusRaw === "active" ||
+    statusRaw === "pending" ||
+    statusRaw === "suspended"
+      ? statusRaw
+      : "all";
+
+  const role: "all" | UserRole =
+    roleRaw === "super" || roleRaw === "manager" || roleRaw === "operator"
+      ? roleRaw
+      : "all";
+
+  return {
+    page: Number.isFinite(page) && page > 0 ? Math.floor(page) : 1,
+    pageSize:
+      Number.isFinite(pageSize) && pageSize > 0 ? Math.floor(pageSize) : 10,
     searchField,
     keyword,
     status,
     role,
-    setSearchField,
-    setKeyword,
-    setStatus,
-    setRole,
-    setPage,
-    setPageSize,
-    toSearchParams,
-  } = useUserFilterStore();
+  };
+}
 
-  const { t } = useAppPreferences();
+function buildUserSearchParams(params: UserSearchParams) {
+  const next = new URLSearchParams();
+
+  next.set("page", String(params.page));
+  next.set("pageSize", String(params.pageSize));
+  next.set("searchField", params.searchField);
+  next.set("keyword", params.keyword);
+  next.set("status", params.status);
+  next.set("role", params.role);
+
+  return next;
+}
+
+function areUserSearchParamsEqual(
+  left: UserSearchParams,
+  right: UserSearchParams,
+) {
+  return (
+    left.page === right.page &&
+    left.pageSize === right.pageSize &&
+    left.searchField === right.searchField &&
+    left.keyword === right.keyword &&
+    left.status === right.status &&
+    left.role === right.role
+  );
+}
+
+export function UserListPage() {
+  const navigate = useNavigate();
+  const [urlSearchParams, setUrlSearchParams] = useSearchParams();
+
+  const urlParams = useMemo(
+    () => parseUserSearchParams(urlSearchParams),
+    [urlSearchParams],
+  );
+
+  const { t } = useTranslation();
   const { openAlert, openConfirm } = useDialogActions();
 
   const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  const searchParams = toSearchParams();
-  const usersQuery = useUsersQuery(searchParams);
+  const usersQuery = useUsersQuery(urlParams);
   const updateStatusMutation = useUpdateUserStatusMutation();
   const deleteUserMutation = useDeleteUserMutation();
   const deleteUsersMutation = useDeleteUsersMutation();
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const list = usersQuery.data?.data ?? [];
   const totalCount = usersQuery.data?.totalCount ?? 0;
-  const isAllSelected =
-    list.length > 0 && list.every((user) => selectedIds.includes(user.id));
 
-  useEffect(() => {
-    const visibleIds = new Set(list.map((user) => user.id));
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSelectedIds((prev) => prev.filter((id) => visibleIds.has(id)));
+  const visibleUserIds = useMemo(() => {
+    return new Set(list.map((user) => user.id));
   }, [list]);
+
+  const validSelectedIds = useMemo(() => {
+    return selectedIds.filter((id) => visibleUserIds.has(id));
+  }, [selectedIds, visibleUserIds]);
+
+  const isAllSelected =
+    list.length > 0 && list.every((user) => validSelectedIds.includes(user.id));
 
   const filterValue = useMemo<UserFilterValues>(
     () => ({
-      searchField,
-      keyword,
-      status,
-      role,
+      searchField: urlParams.searchField,
+      keyword: urlParams.keyword,
+      status: urlParams.status,
+      role: urlParams.role,
     }),
-    [keyword, role, searchField, status],
+    [
+      urlParams.keyword,
+      urlParams.role,
+      urlParams.searchField,
+      urlParams.status,
+    ],
   );
+
+  const updateSearchParams = (nextParams: UserSearchParams) => {
+    if (areUserSearchParamsEqual(urlParams, nextParams)) {
+      return;
+    }
+
+    setUrlSearchParams(buildUserSearchParams(nextParams), { replace: true });
+  };
 
   return (
     <section>
       <PageHeader
-        title={t("users.title")}
-        description={t("users.description")}
+        title={t("회원 관리")}
+        description={t(
+          "검색, 필터, 상태 변경까지 실제 운영 플로우에 맞춘 관리 화면입니다.",
+        )}
       />
 
       <div className="mx-3 mb-8 rounded-md bg-white shadow-md dark:bg-dark-surface">
@@ -107,24 +182,28 @@ export function UserListPage() {
               onClick={() => setFilterOpen(true)}
             >
               <span className="material-symbols-outlined text-base">tune</span>
-              {t("users.filter")}
+              {t("필터")}
             </button>
           </div>
 
-          {selectedIds.length > 0 ? (
-            <div className="flex items-center">
+          {validSelectedIds.length > 0 ? (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-500 dark:text-slate-300">
+                {t("{count}개 선택됨", { count: validSelectedIds.length })}
+              </span>
               <button
                 type="button"
-                className="inline-flex items-center gap-1 rounded-md bg-rose-500 px-3 py-2 text-sm text-white"
+                className="inline-flex cursor-pointer items-center gap-1 rounded-md bg-rose-500 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={deleteUsersMutation.isPending}
                 onClick={() =>
-                  openConfirm(t("users.confirmBulkDelete"), () =>
-                    deleteUsersMutation.mutate(selectedIds, {
+                  openConfirm(t("선택한 회원을 모두 삭제하시겠습니까?"), () =>
+                    deleteUsersMutation.mutate(validSelectedIds, {
                       onSuccess: () => {
                         setSelectedIds([]);
-                        openAlert(t("common.completed"));
+                        openAlert(t("처리되었습니다."));
                       },
-                      onError: () => openAlert(t("common.failed")),
+                      onError: () =>
+                        openAlert(t("처리 중 오류가 발생했습니다.")),
                     }),
                   )
                 }
@@ -132,14 +211,14 @@ export function UserListPage() {
                 <span className="material-symbols-outlined text-base">
                   delete
                 </span>
-                {t("users.action.delete")}
+                {t("삭제")}
               </button>
             </div>
           ) : (
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                className="inline-flex h-10 items-center gap-1 rounded-md border border-slate-200 px-3 text-sm text-slate-100 dark:border-dark-border bg-green-500"
+                className="inline-flex h-10 cursor-pointer items-center gap-1 rounded-md border border-slate-200 bg-green-500 px-3 text-sm text-slate-100 dark:border-dark-border"
                 onClick={() =>
                   downloadCsv(
                     "users-export",
@@ -167,19 +246,23 @@ export function UserListPage() {
                 <span className="material-symbols-outlined text-base">
                   download
                 </span>
-                {t("users.excelDownload")}
+                {t("엑셀 다운로드")}
               </button>
 
               <div className="flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white pl-2.5 text-sm text-slate-600 dark:border-dark-border dark:bg-dark-surface dark:text-slate-100">
                 <span className="whitespace-nowrap text-xs">
-                  {t("users.listSize")}
+                  {t("목록 수")}
                 </span>
                 <div className="relative">
                   <select
-                    className="h-7 min-w-[64px] appearance-none rounded-md bg-white pl-2 pr-6 text-xs text-slate-700 outline-none dark:bg-dark-surface dark:text-slate-100"
-                    value={String(pageSize)}
+                    className="h-7 min-w-[64px] cursor-pointer appearance-none rounded-md bg-white pl-2 pr-6 text-xs text-slate-700 outline-none dark:bg-dark-surface dark:text-slate-100"
+                    value={String(urlParams.pageSize)}
                     onChange={(event) =>
-                      setPageSize(Number(event.target.value))
+                      updateSearchParams({
+                        ...urlParams,
+                        page: 1,
+                        pageSize: Number(event.target.value),
+                      })
                     }
                   >
                     {PAGE_SIZE_OPTIONS.map((size) => (
@@ -197,93 +280,125 @@ export function UserListPage() {
           )}
         </div>
 
-        <div className="overflow-x-auto overflow-y-hidden pb-2">
-          <table className="w-full min-w-[1024px]">
-            <thead className="border-b border-slate-100 text-center text-xs text-slate-400 dark:border-dark-border dark:text-slate-300">
+        <TableContainer tableClassName="w-full min-w-[1024px]">
+          <thead className="border-b border-slate-100 text-center text-xs text-slate-400 dark:border-dark-border dark:text-slate-300">
+            <tr>
+              <th className="align-middle whitespace-nowrap px-4 py-3">
+                <AppCheckbox
+                  checked={isAllSelected}
+                  ariaLabel="select all users"
+                  onChange={(checked) =>
+                    setSelectedIds(checked ? list.map((user) => user.id) : [])
+                  }
+                />
+              </th>
+              <th className="align-middle whitespace-nowrap px-6 py-3">No</th>
+              <th className="align-middle whitespace-nowrap px-6 py-3">
+                {t("상태")}
+              </th>
+              <th className="align-middle whitespace-nowrap px-6 py-3">
+                {t("이름")}
+              </th>
+              <th className="align-middle whitespace-nowrap px-6 py-3">
+                {t("이메일")}
+              </th>
+              <th className="align-middle whitespace-nowrap px-6 py-3">
+                {t("권한")}
+              </th>
+              <th className="align-middle whitespace-nowrap px-6 py-3">
+                {t("가입일")}
+              </th>
+              <th className="align-middle whitespace-nowrap px-6 py-3">
+                {t("마지막 로그인")}
+              </th>
+              <th className="align-middle whitespace-nowrap px-6 py-3 text-right"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {usersQuery.isLoading && (
+              <>
+                {Array.from({ length: 6 }).map((_, skeletonIndex) => (
+                  <tr
+                    key={`users-skeleton-${skeletonIndex}`}
+                    className="border-b border-slate-100 dark:border-dark-border"
+                  >
+                    <td className="px-4 py-3">
+                      <div className="mx-auto h-5 w-5 animate-pulse rounded border border-slate-200 bg-slate-100 dark:border-dark-border dark:bg-slate-700/70" />
+                    </td>
+                    <td className="px-6 py-3">
+                      <div className="mx-auto h-4 w-8 animate-pulse rounded bg-slate-100 dark:bg-slate-700/70" />
+                    </td>
+                    <td className="px-6 py-3">
+                      <div className="mx-auto h-6 w-16 animate-pulse rounded-full bg-slate-100 dark:bg-slate-700/70" />
+                    </td>
+                    <td className="px-6 py-3">
+                      <div className="mx-auto h-4 w-20 animate-pulse rounded bg-slate-100 dark:bg-slate-700/70" />
+                    </td>
+                    <td className="px-6 py-3">
+                      <div className="mx-auto h-4 w-36 animate-pulse rounded bg-slate-100 dark:bg-slate-700/70" />
+                    </td>
+                    <td className="px-6 py-3">
+                      <div className="mx-auto h-4 w-16 animate-pulse rounded bg-slate-100 dark:bg-slate-700/70" />
+                    </td>
+                    <td className="px-6 py-3">
+                      <div className="mx-auto h-4 w-20 animate-pulse rounded bg-slate-100 dark:bg-slate-700/70" />
+                    </td>
+                    <td className="px-6 py-3">
+                      <div className="mx-auto h-4 w-28 animate-pulse rounded bg-slate-100 dark:bg-slate-700/70" />
+                    </td>
+                    <td className="px-6 py-3">
+                      <div className="ml-auto flex w-fit items-center gap-1">
+                        <div className="h-7 w-7 animate-pulse rounded-md bg-slate-100 dark:bg-slate-700/70" />
+                        <div className="h-7 w-7 animate-pulse rounded-md bg-slate-100 dark:bg-slate-700/70" />
+                        <div className="h-7 w-7 animate-pulse rounded-md bg-slate-100 dark:bg-slate-700/70" />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </>
+            )}
+
+            {usersQuery.isError && (
               <tr>
-                <th className="whitespace-nowrap px-4 py-3">
-                  <input
-                    type="checkbox"
-                    // className="size-4 relative h-5 w-5 cursor-pointer appearance-none rounded border border-slate-300 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 checked:border-indigo-500 checked:bg-indigo-500 checked:before:content-[''] checked:before:absolute checked:before:top-[calc(50%-1px)] checked:before:left-1/2 checked:before:-translate-x-1/2 checked:before:-translate-y-1/2 checked:before:rotate-45 checked:before:w-1.5 checked:before:h-2.5 checked:before:border-b-2 checked:before:border-r-2 checked:before:border-white dark:border-dark-border dark:bg-dark-surface dark:checked:border-indigo-500 dark:checked:bg-indigo-500"
-                    className="size-4 cursor-pointer appearance-auto dark:bg-dark-surface"
-                    checked={isAllSelected}
-                    onChange={(event) =>
-                      setSelectedIds(
-                        event.target.checked ? list.map((user) => user.id) : [],
-                      )
-                    }
-                  />
-                </th>
-                <th className="whitespace-nowrap px-6 py-3">No</th>
-                <th className="whitespace-nowrap px-6 py-3">
-                  {t("users.table.status")}
-                </th>
-                <th className="whitespace-nowrap px-6 py-3">
-                  {t("users.table.name")}
-                </th>
-                <th className="whitespace-nowrap px-6 py-3">
-                  {t("users.table.email")}
-                </th>
-                <th className="whitespace-nowrap px-6 py-3">
-                  {t("users.table.role")}
-                </th>
-                <th className="whitespace-nowrap px-6 py-3">
-                  {t("users.table.joinDate")}
-                </th>
-                <th className="whitespace-nowrap px-6 py-3">
-                  {t("users.table.lastLogin")}
-                </th>
-                <th className="whitespace-nowrap px-6 py-3 text-right">
-                  {t("users.table.manage")}
-                </th>
+                <td
+                  colSpan={9}
+                  className="px-6 py-10 text-center text-sm text-rose-500 dark:text-rose-300"
+                >
+                  <div className="flex items-center justify-center">
+                    {t("회원 목록을 불러오지 못했습니다.")}
+                  </div>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {usersQuery.isLoading && (
+            )}
+
+            {!usersQuery.isLoading &&
+              !usersQuery.isError &&
+              list.length === 0 && (
                 <tr>
                   <td
                     colSpan={9}
                     className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400"
                   >
-                    {t("common.loadingUsers")}
+                    <div className="flex items-center justify-center">
+                      {t("조건에 맞는 회원이 없습니다.")}
+                    </div>
                   </td>
                 </tr>
               )}
-              {usersQuery.isError && (
-                <tr>
-                  <td
-                    colSpan={9}
-                    className="px-6 py-10 text-center text-sm text-rose-500 dark:text-rose-300"
-                  >
-                    {t("common.errorUsers")}
-                  </td>
-                </tr>
-              )}
-              {!usersQuery.isLoading &&
-                !usersQuery.isError &&
-                list.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={9}
-                      className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400"
-                    >
-                      {t("users.empty")}
-                    </td>
-                  </tr>
-                )}
-              {list.map((user, index) => (
-                <tr
-                  key={user.id}
-                  className="border-b border-slate-100 text-center text-sm text-slate-600 dark:border-dark-border dark:text-slate-100"
-                >
-                  <td className="whitespace-nowrap px-4 py-3">
-                    <input
-                      type="checkbox"
-                      className="size-4 cursor-pointer appearance-auto accent-main-color"
-                      checked={selectedIds.includes(user.id)}
-                      onChange={(event) =>
+
+            {list.map((user, index) => (
+              <tr
+                key={user.id}
+                className="border-b border-slate-100 dark:border-dark-border"
+              >
+                <td className="align-middle whitespace-nowrap px-4 py-3">
+                  <div className="flex items-center justify-center">
+                    <AppCheckbox
+                      checked={validSelectedIds.includes(user.id)}
+                      ariaLabel={`select user ${user.id}`}
+                      onChange={(checked) =>
                         setSelectedIds((prev) =>
-                          event.target.checked
+                          checked
                             ? prev.includes(user.id)
                               ? prev
                               : [...prev, user.id]
@@ -291,56 +406,74 @@ export function UserListPage() {
                         )
                       }
                     />
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-3">
-                    {(page - 1) * pageSize + index + 1}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-3">
+                  </div>
+                </td>
+                <td className="align-middle whitespace-nowrap px-6 py-3">
+                  <div className="text-center text-sm text-slate-700 whitespace-nowrap dark:text-white">
+                    {(urlParams.page - 1) * urlParams.pageSize + index + 1}
+                  </div>
+                </td>
+                <td className="align-middle whitespace-nowrap px-6 py-3">
+                  <div className="flex items-center justify-center">
                     <StatusBadge status={user.status} />
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-3">
+                  </div>
+                </td>
+                <td className="align-middle whitespace-nowrap px-6 py-3">
+                  <div className="text-center text-sm text-slate-700 whitespace-nowrap dark:text-white">
                     <Link
                       to={`/users/${user.id}`}
-                      className="font-semibold text-slate-600 dark:text-slate-100"
+                      className="cursor-pointer text-slate-700 dark:text-white"
                     >
                       {user.name}
                     </Link>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-3">{user.email}</td>
-                  <td className="whitespace-nowrap px-6 py-3">
+                  </div>
+                </td>
+                <td className="align-middle whitespace-nowrap px-6 py-3">
+                  <div className="text-center text-sm text-slate-700 whitespace-nowrap dark:text-white">
+                    {user.email}
+                  </div>
+                </td>
+                <td className="align-middle whitespace-nowrap px-6 py-3">
+                  <div className="text-center text-sm text-slate-700 whitespace-nowrap dark:text-white">
                     {t(roleLabelKey[user.role])}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-3">
+                  </div>
+                </td>
+                <td className="align-middle whitespace-nowrap px-6 py-3">
+                  <div className="text-center text-sm text-slate-700 whitespace-nowrap dark:text-white">
                     {dayjs(user.joinDate).format("YYYY.MM.DD")}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-3">
+                  </div>
+                </td>
+                <td className="align-middle whitespace-nowrap px-6 py-3">
+                  <div className="text-center text-sm text-slate-700 whitespace-nowrap dark:text-white">
                     {dayjs(user.lastLoginAt).format("YYYY.MM.DD HH:mm")}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-3">
-                    <div className="flex items-center justify-end gap-1">
+                  </div>
+                </td>
+                <td className="align-middle whitespace-nowrap px-6 py-3">
+                  <div className="flex items-center justify-center">
+                    <div className="flex w-full items-center justify-end gap-1">
                       {(() => {
                         const actionLabel =
                           user.status === "active"
-                            ? t("users.action.suspend")
+                            ? t("정지")
                             : user.status === "pending"
-                              ? t("users.action.approve")
-                              : t("users.action.activate");
+                              ? t("승인")
+                              : t("활성화");
 
                         return (
                           <>
                             <button
                               type="button"
-                              className={`inline-flex h-7 items-center justify-center rounded-md px-2 text-[11px] font-medium ${
+                              className={`inline-flex h-7 cursor-pointer items-center justify-center rounded-md px-2 text-[11px] font-medium ${
                                 user.status === "active"
                                   ? "bg-rose-500 text-white"
                                   : user.status === "pending"
                                     ? "bg-emerald-500 text-white"
                                     : "bg-indigo-500 text-white"
-                              }`}
+                              } disabled:cursor-not-allowed disabled:opacity-60`}
                               disabled={updateStatusMutation.isPending}
                               onClick={() =>
                                 openConfirm(
-                                  t("users.confirmChangeStatus", {
+                                  t("{action} 하시겠습니까?", {
                                     action: actionLabel,
                                   }),
                                   () =>
@@ -351,9 +484,11 @@ export function UserListPage() {
                                       },
                                       {
                                         onSuccess: () =>
-                                          openAlert(t("common.completed")),
+                                          openAlert(t("처리되었습니다.")),
                                         onError: () =>
-                                          openAlert(t("common.failed")),
+                                          openAlert(
+                                            t("처리 중 오류가 발생했습니다."),
+                                          ),
                                       },
                                     ),
                                 )
@@ -361,30 +496,40 @@ export function UserListPage() {
                             >
                               {actionLabel}
                             </button>
+
                             <button
                               type="button"
-                              className="group relative flex size-7 items-center justify-center rounded-md bg-indigo-500 text-slate-50"
+                              className="group relative flex size-7 cursor-pointer items-center justify-center rounded-md bg-indigo-500 text-slate-50"
                               onClick={() => navigate(`/users/${user.id}`)}
                             >
                               <span className="material-symbols-outlined text-lg">
                                 edit
                               </span>
                               <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-black px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
-                                {t("users.action.edit")}
+                                {t("수정")}
                               </span>
                             </button>
+
                             <button
                               type="button"
-                              className="group relative flex size-7 items-center justify-center rounded-md bg-slate-400 text-slate-50 dark:bg-slate-500"
+                              className="group relative flex size-7 cursor-pointer items-center justify-center rounded-md bg-slate-400 text-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-500"
                               disabled={deleteUserMutation.isPending}
                               onClick={() =>
-                                openConfirm(t("users.confirmDelete"), () =>
-                                  deleteUserMutation.mutate(user.id, {
-                                    onSuccess: () =>
-                                      openAlert(t("common.completed")),
-                                    onError: () =>
-                                      openAlert(t("common.failed")),
-                                  }),
+                                openConfirm(
+                                  t("해당 회원을 삭제하시겠습니까?"),
+                                  () =>
+                                    deleteUserMutation.mutate(user.id, {
+                                      onSuccess: () => {
+                                        setSelectedIds((prev) =>
+                                          prev.filter((id) => id !== user.id),
+                                        );
+                                        openAlert(t("처리되었습니다."));
+                                      },
+                                      onError: () =>
+                                        openAlert(
+                                          t("처리 중 오류가 발생했습니다."),
+                                        ),
+                                    }),
                                 )
                               }
                             >
@@ -392,41 +537,50 @@ export function UserListPage() {
                                 delete
                               </span>
                               <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-black px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
-                                {t("users.action.delete")}
+                                {t("삭제")}
                               </span>
                             </button>
                           </>
                         );
                       })()}
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </TableContainer>
 
         <Pagination
           total={totalCount}
-          curr={page}
-          limit={pageSize}
-          movePage={setPage}
+          curr={urlParams.page}
+          limit={urlParams.pageSize}
+          movePage={(nextPage) =>
+            updateSearchParams({ ...urlParams, page: nextPage })
+          }
         />
       </div>
 
-      <UserFilterModal
-        open={filterOpen}
-        loading={usersQuery.isFetching}
-        value={filterValue}
-        onClose={() => setFilterOpen(false)}
-        onApply={(nextValue) => {
-          setSearchField(nextValue.searchField);
-          setKeyword(nextValue.keyword.trim());
-          setStatus(nextValue.status);
-          setRole(nextValue.role);
-          setFilterOpen(false);
-        }}
-      />
+      {filterOpen && (
+        <UserFilterModal
+          key={buildUserSearchParams(urlParams).toString()}
+          open={filterOpen}
+          loading={usersQuery.isFetching}
+          value={filterValue}
+          onClose={() => setFilterOpen(false)}
+          onApply={(nextValue) => {
+            updateSearchParams({
+              ...urlParams,
+              page: 1,
+              searchField: nextValue.searchField,
+              keyword: nextValue.keyword.trim(),
+              status: nextValue.status,
+              role: nextValue.role,
+            });
+            setFilterOpen(false);
+          }}
+        />
+      )}
     </section>
   );
 }

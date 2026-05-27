@@ -16,6 +16,11 @@ export async function createSubtitle(videoId: string, payload: SubtitlePayload) 
   return response.data.data
 }
 
+export async function updateSubtitle(videoId: string, subtitleId: string, payload: SubtitlePayload) {
+  const response = await apiClient.put<{ data: VideoDetail }>(`/videos/${videoId}/subtitles/${subtitleId}`, payload)
+  return response.data.data
+}
+
 export async function extractSubtitles(videoId: string) {
   const response = await apiClient.post<{ data: VideoDetail }>(`/videos/${videoId}/subtitles/extract`)
   return response.data.data

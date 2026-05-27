@@ -446,6 +446,33 @@ export const handlers = [
     return HttpResponse.json({ data: video })
   }),
 
+  http.put('/api/videos/:id/subtitles/:subtitleId', async ({ params, request }) => {
+    await delay(240)
+    const video = videoDb.find((item) => item.id === params.id)
+    if (!video) {
+      return HttpResponse.json({ message: '영상을 찾을 수 없습니다.' }, { status: 404 })
+    }
+
+    const subtitle = video.subtitles.find((item) => item.id === params.subtitleId)
+    if (!subtitle) {
+      return HttpResponse.json({ message: '자막을 찾을 수 없습니다.' }, { status: 404 })
+    }
+
+    const payload = (await request.json()) as Partial<SubtitleTrack>
+    if (!payload.language || !payload.label || !payload.startTime || !payload.endTime || !payload.text) {
+      return HttpResponse.json({ message: '자막 입력값이 올바르지 않습니다.' }, { status: 400 })
+    }
+
+    subtitle.language = payload.language
+    subtitle.label = payload.label
+    subtitle.startTime = payload.startTime
+    subtitle.endTime = payload.endTime
+    subtitle.text = payload.text
+    video.updatedAt = new Date().toISOString()
+
+    return HttpResponse.json({ data: video })
+  }),
+
   http.delete('/api/videos/:id/subtitles/:subtitleId', async ({ params }) => {
     await delay(220)
     const video = videoDb.find((item) => item.id === params.id)

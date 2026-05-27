@@ -1,10 +1,10 @@
 import { useEffect } from 'react'
-import { useAppPreferences } from '../../contexts/AppPreferencesContext'
+import { useTranslation } from 'react-i18next'
 import { useDialogStore } from '../../store/dialogStore'
 
 function ModalShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/35 px-3">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/35 px-3">
       <div className="relative w-[320px] max-w-[calc(100vw-20px)] rounded-md bg-white shadow-lg dark:bg-slate-800">
         {children}
       </div>
@@ -13,7 +13,7 @@ function ModalShell({ children }: { children: React.ReactNode }) {
 }
 
 export function DialogRenderer() {
-  const { t } = useAppPreferences()
+  const { t } = useTranslation()
 
   const alert = useDialogStore((state) => state.alert)
   const closeAlert = useDialogStore((state) => state.closeAlert)
@@ -55,7 +55,7 @@ export function DialogRenderer() {
               className="cursor-pointer rounded-md bg-indigo-500 px-3 py-1 text-xs font-semibold text-white"
               onClick={closeAlert}
             >
-              {t('confirm.ok')}
+              {t('확인')}
             </button>
           </div>
         </ModalShell>
@@ -77,14 +77,14 @@ export function DialogRenderer() {
               className="cursor-pointer rounded-md bg-indigo-500 px-3 py-1 text-xs font-semibold text-white"
               onClick={checkConfirm}
             >
-              {t('confirm.ok')}
+              {t('확인')}
             </button>
             <button
               type="button"
               className="cursor-pointer rounded-md bg-slate-400 px-3 py-1 text-xs font-semibold text-white"
               onClick={closeConfirm}
             >
-              {t('confirm.cancel')}
+              {t('취소')}
             </button>
           </div>
         </ModalShell>

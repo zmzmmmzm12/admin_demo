@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useAppPreferences } from "../contexts/AppPreferencesContext";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { UserRole, UserStatus } from "../types/user";
 
 export interface UserFilterValues {
@@ -18,23 +18,23 @@ interface UserFilterModalProps {
 }
 
 const searchFieldOptions = [
-  { value: "id", labelKey: "users.searchType.id" },
-  { value: "name", labelKey: "users.searchType.name" },
-  { value: "email", labelKey: "users.searchType.email" },
+  { value: "id", labelKey: "ID" },
+  { value: "name", labelKey: "이름" },
+  { value: "email", labelKey: "이메일" },
 ] as const;
 
 const statusOptions = [
-  { value: "all", labelKey: "users.allStatus" },
-  { value: "active", labelKey: "users.status.active" },
-  { value: "pending", labelKey: "users.status.pending" },
-  { value: "suspended", labelKey: "users.status.suspended" },
+  { value: "all", labelKey: "전체 상태" },
+  { value: "active", labelKey: "활성" },
+  { value: "pending", labelKey: "대기" },
+  { value: "suspended", labelKey: "정지" },
 ] as const;
 
 const roleOptions = [
-  { value: "all", labelKey: "users.allRole" },
-  { value: "super", labelKey: "users.role.super" },
-  { value: "manager", labelKey: "users.role.manager" },
-  { value: "operator", labelKey: "users.role.operator" },
+  { value: "all", labelKey: "전체 권한" },
+  { value: "super", labelKey: "슈퍼관리자" },
+  { value: "manager", labelKey: "매니저" },
+  { value: "operator", labelKey: "운영자" },
 ] as const;
 
 const initialFilterState: UserFilterValues = {
@@ -51,8 +51,17 @@ export function UserFilterModal({
   onClose,
   onApply,
 }: UserFilterModalProps) {
-  const { t } = useAppPreferences();
+  const { t } = useTranslation();
   const [localValue, setLocalValue] = useState<UserFilterValues>(value);
+  const searchFieldLabel = useMemo(
+    () =>
+      localValue.searchField === "id"
+        ? "ID"
+        : localValue.searchField === "name"
+          ? "이름"
+          : "이메일",
+    [localValue.searchField],
+  );
 
   useEffect(() => {
     if (open) {
@@ -75,10 +84,10 @@ export function UserFilterModal({
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-slate-100 px-1 text-base font-semibold text-slate-700 dark:border-dark-border dark:text-slate-100">
-          <div className="px-3 py-3">{t("users.filterTitle")}</div>
+          <div className="px-3 py-3">{t("필터")}</div>
           <button
             type="button"
-            className="flex size-10 items-center justify-center text-slate-500 dark:text-slate-300"
+            className="flex size-10 cursor-pointer items-center justify-center text-slate-500 dark:text-slate-300"
             onClick={onClose}
             aria-label="close"
           >
@@ -90,7 +99,7 @@ export function UserFilterModal({
           <div className="grid grid-cols-1 gap-4 sm:[grid-template-columns:140px_minmax(0,1fr)]">
             <div>
               <div className="mb-2 text-xs text-slate-500 dark:text-slate-400">
-                {t("users.searchType")}
+                {t("검색 타입")}
               </div>
               <div className="relative">
                 <select
@@ -121,15 +130,13 @@ export function UserFilterModal({
 
             <div>
               <div className="mb-2 text-xs text-slate-500 dark:text-slate-400">
-                {t("users.searchValue")}
+                {t("검색 값")}
               </div>
               <input
                 type="text"
                 className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none disabled:cursor-not-allowed disabled:opacity-60 dark:border-dark-border dark:bg-dark-surface dark:text-slate-100"
                 disabled={loading}
-                placeholder={t(
-                  `users.searchType.${localValue.searchField}` as const,
-                )}
+                placeholder={t(searchFieldLabel)}
                 value={localValue.keyword}
                 onChange={(event) =>
                   setLocalValue((prev) => ({
@@ -144,7 +151,7 @@ export function UserFilterModal({
 
           <div>
             <div className="mb-2 text-xs text-slate-500 dark:text-slate-400">
-              {t("users.filterStatus")}
+              {t("상태")}
             </div>
             <div className="relative">
               <select
@@ -172,7 +179,7 @@ export function UserFilterModal({
 
           <div>
             <div className="mb-2 text-xs text-slate-500 dark:text-slate-400">
-              {t("users.filterRole")}
+              {t("권한")}
             </div>
             <div className="relative">
               <select
@@ -206,7 +213,7 @@ export function UserFilterModal({
             disabled={loading}
             onClick={() => setLocalValue(initialFilterState)}
           >
-            {t("users.filterReset")}
+            {t("초기화")}
           </button>
           <button
             type="button"
@@ -214,7 +221,7 @@ export function UserFilterModal({
             disabled={loading}
             onClick={() => onApply(localValue)}
           >
-            {t("users.filterApply")}
+            {t("확인")}
           </button>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import {
   IconDarkMode,
@@ -10,25 +11,26 @@ import { useAppPreferences } from "../contexts/AppPreferencesContext";
 
 const menus: Array<{
   to: string;
-  key: "menu.dashboard" | "menu.users" | "menu.notices" | "menu.videos";
+  key: "대시보드" | "회원 관리" | "공지사항 관리" | "영상 관리";
   icon: string;
   end?: boolean;
 }> = [
-  { to: "/", key: "menu.dashboard", icon: "space_dashboard", end: true },
-  { to: "/users", key: "menu.users", icon: "group" },
-  { to: "/notices", key: "menu.notices", icon: "campaign" },
-  { to: "/videos", key: "menu.videos", icon: "movie" },
+  { to: "/", key: "대시보드", icon: "space_dashboard", end: true },
+  { to: "/users", key: "회원 관리", icon: "group" },
+  { to: "/notices", key: "공지사항 관리", icon: "campaign" },
+  { to: "/videos", key: "영상 관리", icon: "movie" },
 ];
 
 export function AdminLayout() {
-  const { theme, setTheme, locale, setLocale, t } = useAppPreferences();
+  const { theme, setTheme, locale, setLocale } = useAppPreferences();
+  const { t } = useTranslation();
 
   const [menuCollapsed, setMenuCollapsed] = useState(false);
   const [showMenuText, setShowMenuText] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [languageOpen, setLanguageOpen] = useState(false);
+
   const languageRef = useRef<HTMLDivElement>(null);
-  const prevCollapsedRef = useRef(menuCollapsed);
   const shouldShowTextOnTransitionEndRef = useRef(false);
 
   useEffect(() => {
@@ -46,41 +48,32 @@ export function AdminLayout() {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
-  useEffect(() => {
+  const toggleMenu = () => {
     if (window.innerWidth < 1280) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMobileMenuOpen((prev) => !prev);
       setShowMenuText(true);
       shouldShowTextOnTransitionEndRef.current = false;
-      prevCollapsedRef.current = menuCollapsed;
       return;
     }
 
     if (menuCollapsed) {
       setShowMenuText(false);
-      shouldShowTextOnTransitionEndRef.current = false;
-      prevCollapsedRef.current = menuCollapsed;
-      return;
-    }
-
-    const wasCollapsed = prevCollapsedRef.current;
-    prevCollapsedRef.current = menuCollapsed;
-
-    if (!wasCollapsed) {
-      setShowMenuText(true);
-      shouldShowTextOnTransitionEndRef.current = false;
+      shouldShowTextOnTransitionEndRef.current = true;
+      setMenuCollapsed(false);
       return;
     }
 
     setShowMenuText(false);
-    shouldShowTextOnTransitionEndRef.current = true;
-  }, [menuCollapsed]);
+    shouldShowTextOnTransitionEndRef.current = false;
+    setMenuCollapsed(true);
+  };
 
   return (
     <div className="min-h-screen dark:bg-dark-canvas">
       {mobileMenuOpen && (
         <button
           type="button"
-          className="fixed inset-0 z-30 bg-black/35 xl:hidden"
+          className="fixed inset-0 z-30 cursor-pointer bg-black/35 xl:hidden"
           onClick={() => setMobileMenuOpen(false)}
           aria-label="close menu"
         />
@@ -92,6 +85,7 @@ export function AdminLayout() {
           if (event.target !== event.currentTarget) return;
           if (event.propertyName !== "width") return;
           if (!shouldShowTextOnTransitionEndRef.current) return;
+
           shouldShowTextOnTransitionEndRef.current = false;
           setShowMenuText(true);
         }}
@@ -106,13 +100,13 @@ export function AdminLayout() {
         <div className="flex h-[60px] items-center justify-center border-b border-slate-200 px-3 dark:border-dark-border">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 text-slate-800 dark:text-slate-100"
+            className="inline-flex cursor-pointer items-center gap-2 text-slate-800 dark:text-slate-100"
           >
             <span className="inline-flex size-8 items-center justify-center rounded-md bg-main-color text-sm font-bold text-white">
               A
             </span>
             {showMenuText && (
-              <span className="text-sm font-semibold">{t("brand.name")}</span>
+              <span className="text-sm font-semibold">{t("Admin Pilot")}</span>
             )}
           </Link>
         </div>
@@ -129,6 +123,7 @@ export function AdminLayout() {
               className={({ isActive }) =>
                 clsx(
                   "flex h-10 items-center rounded-md text-sm font-semibold transition",
+                  "cursor-pointer",
                   menuCollapsed ? "justify-center gap-0 px-2" : "gap-2 px-3",
                   isActive
                     ? "bg-main-color text-white"
@@ -156,15 +151,8 @@ export function AdminLayout() {
           <div className="mx-auto flex h-full items-center justify-between px-4">
             <button
               type="button"
-              className="inline-flex size-9 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-dark-hover"
-              onClick={() => {
-                if (window.innerWidth < 1280) {
-                  setMobileMenuOpen((prev) => !prev);
-                  return;
-                }
-
-                setMenuCollapsed((prev) => !prev);
-              }}
+              className="inline-flex size-9 cursor-pointer items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-dark-hover"
+              onClick={toggleMenu}
               aria-label="toggle menu"
             >
               <span className="material-symbols-outlined text-2xl">menu</span>
@@ -174,7 +162,7 @@ export function AdminLayout() {
               <div ref={languageRef} className="relative">
                 <button
                   type="button"
-                  className="flex size-10 items-center justify-center rounded-full text-[#9ca3af]"
+                  className="flex size-10 cursor-pointer items-center justify-center rounded-full text-[#9ca3af]"
                   onClick={() => setLanguageOpen((prev) => !prev)}
                   aria-label="language"
                 >
@@ -187,6 +175,7 @@ export function AdminLayout() {
                       type="button"
                       className={clsx(
                         "flex w-full items-center justify-between whitespace-nowrap px-3 py-2 text-left text-sm",
+                        "cursor-pointer",
                         locale === "ko"
                           ? "bg-slate-100 text-slate-700 dark:bg-dark-hover dark:text-white"
                           : "text-slate-400 hover:bg-slate-50 dark:hover:bg-dark-hover",
@@ -196,7 +185,7 @@ export function AdminLayout() {
                         setLanguageOpen(false);
                       }}
                     >
-                      <span>{t("toolbar.ko")}</span>
+                      <span>{t("한국어")}</span>
                       {locale === "ko" && (
                         <span className="material-symbols-outlined text-[18px]">
                           check
@@ -208,6 +197,7 @@ export function AdminLayout() {
                       type="button"
                       className={clsx(
                         "flex w-full items-center justify-between whitespace-nowrap px-3 py-2 text-left text-sm",
+                        "cursor-pointer",
                         locale === "en"
                           ? "bg-slate-100 text-slate-700 dark:bg-dark-hover dark:text-white"
                           : "text-slate-400 hover:bg-slate-50 dark:hover:bg-dark-hover",
@@ -217,7 +207,7 @@ export function AdminLayout() {
                         setLanguageOpen(false);
                       }}
                     >
-                      <span>{t("toolbar.en")}</span>
+                      <span>{t("English")}</span>
                       {locale === "en" && (
                         <span className="material-symbols-outlined text-[18px]">
                           check
@@ -233,7 +223,7 @@ export function AdminLayout() {
                 role="switch"
                 aria-checked={theme === "light"}
                 aria-label="theme"
-                className="relative inline-flex h-[30px] w-[60px] items-center rounded-full border border-[#e2e4e9] bg-[#eeeef1] shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1)] dark:border-[#666a73] dark:bg-[#1e1e2d]"
+                className="relative inline-flex h-[30px] w-[60px] cursor-pointer items-center rounded-full border border-[#e2e4e9] bg-[#eeeef1] shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1)] dark:border-[#666a73] dark:bg-[#1e1e2d]"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               >
                 <span

@@ -1,25 +1,27 @@
 import dayjs from "dayjs";
+import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 import { StatusBadge } from "../components/StatusBadge";
 import { useAppPreferences } from "../contexts/AppPreferencesContext";
 import { useUserDetailQuery } from "../hooks/useUsersQuery";
 
 const roleLabelKey = {
-  super: "users.role.super",
-  manager: "users.role.manager",
-  operator: "users.role.operator",
+  super: "슈퍼관리자",
+  manager: "매니저",
+  operator: "운영자",
 } as const;
 
 export function UserDetailPage() {
   const params = useParams();
   const userId = params.userId;
-  const { t, locale } = useAppPreferences();
+  const { locale } = useAppPreferences();
+  const { t } = useTranslation();
   const numberLocale = locale === "ko" ? "ko-KR" : "en-US";
 
   if (!userId) {
     return (
       <p className="mx-3 rounded-md border border-rose-200 bg-rose-50 p-8 text-center text-sm text-rose-600 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
-        {t("common.invalidAccess")}
+        {t("잘못된 접근입니다.")}
       </p>
     );
   }
@@ -29,16 +31,37 @@ export function UserDetailPage() {
 
   if (detailQuery.isLoading) {
     return (
-      <p className="mx-3 rounded-md border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 dark:border-dark-border dark:bg-dark-surface dark:text-slate-400">
-        {t("common.loadingUserDetail")}
-      </p>
+      <section className="mx-3 mb-8 grid animate-pulse gap-4 xl:grid-cols-2">
+        <div className="rounded-md bg-white p-5 shadow-md dark:bg-dark-surface">
+          <div className="h-6 w-32 rounded bg-slate-100 dark:bg-slate-700/70" />
+          <div className="mt-4 space-y-3">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div
+                key={`user-detail-skeleton-${index}`}
+                className="h-5 w-full rounded bg-slate-100 dark:bg-slate-700/70"
+              />
+            ))}
+          </div>
+        </div>
+        <div className="rounded-md bg-white p-5 shadow-md dark:bg-dark-surface">
+          <div className="h-6 w-36 rounded bg-slate-100 dark:bg-slate-700/70" />
+          <div className="mt-4 space-y-2">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div
+                key={`user-activity-skeleton-${index}`}
+                className="h-14 w-full rounded bg-slate-100 dark:bg-slate-700/70"
+              />
+            ))}
+          </div>
+        </div>
+      </section>
     );
   }
 
   if (detailQuery.isError || !detailQuery.data) {
     return (
       <p className="mx-3 rounded-md border border-rose-200 bg-rose-50 p-8 text-center text-sm text-rose-600 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
-        {t("common.errorUserDetail")}
+        {t("회원 상세 정보를 불러오지 못했습니다.")}
       </p>
     );
   }
@@ -56,21 +79,21 @@ export function UserDetailPage() {
         </div>
         <Link
           to="/users"
-          className="ml-auto inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-600 dark:border-dark-border dark:bg-dark-surface-alt dark:text-slate-100"
+          className="ml-auto inline-flex h-9 cursor-pointer items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-600 dark:border-dark-border dark:bg-dark-surface-alt dark:text-slate-100"
         >
-          {t("common.backToList")}
+          {t("목록으로")}
         </Link>
       </div>
 
       <div className="mx-3 mb-8 grid gap-4 xl:grid-cols-2">
         <article className="rounded-md bg-white p-5 shadow-md dark:bg-dark-surface">
           <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-            {t("users.detail.basicInfo")}
+            {t("기본 정보")}
           </h2>
           <dl className="mt-4 space-y-3 text-sm">
             <div className="grid grid-cols-[90px_minmax(0,1fr)] items-center gap-2">
               <dt className="text-slate-500 dark:text-slate-400">
-                {t("users.detail.userId")}
+                {t("회원 ID")}
               </dt>
               <dd className="font-medium text-slate-800 dark:text-slate-100">
                 {user.id}
@@ -78,7 +101,7 @@ export function UserDetailPage() {
             </div>
             <div className="grid grid-cols-[90px_minmax(0,1fr)] items-center gap-2">
               <dt className="text-slate-500 dark:text-slate-400">
-                {t("users.detail.role")}
+                {t("권한")}
               </dt>
               <dd className="font-medium text-slate-800 dark:text-slate-100">
                 {t(roleLabelKey[user.role])}
@@ -86,7 +109,7 @@ export function UserDetailPage() {
             </div>
             <div className="grid grid-cols-[90px_minmax(0,1fr)] items-center gap-2">
               <dt className="text-slate-500 dark:text-slate-400">
-                {t("users.detail.status")}
+                {t("상태")}
               </dt>
               <dd>
                 <StatusBadge status={user.status} />
@@ -94,7 +117,7 @@ export function UserDetailPage() {
             </div>
             <div className="grid grid-cols-[90px_minmax(0,1fr)] items-center gap-2">
               <dt className="text-slate-500 dark:text-slate-400">
-                {t("users.detail.joinDate")}
+                {t("가입일")}
               </dt>
               <dd className="font-medium text-slate-800 dark:text-slate-100">
                 {dayjs(user.joinDate).format("YYYY.MM.DD")}
@@ -102,10 +125,10 @@ export function UserDetailPage() {
             </div>
             <div className="grid grid-cols-[90px_minmax(0,1fr)] items-center gap-2">
               <dt className="text-slate-500 dark:text-slate-400">
-                {t("users.detail.loginCount")}
+                {t("로그인 횟수")}
               </dt>
               <dd className="font-medium text-slate-800 dark:text-slate-100">
-                {t("users.detail.loginCountValue", {
+                {t("{count}회", {
                   count: user.loginCount.toLocaleString(numberLocale),
                 })}
               </dd>
@@ -115,7 +138,7 @@ export function UserDetailPage() {
 
         <article className="rounded-md bg-white p-5 shadow-md dark:bg-dark-surface">
           <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-            {t("users.detail.recentActivity")}
+            {t("최근 활동")}
           </h2>
           <ul className="mt-4 space-y-2">
             {activities.map((item) => (

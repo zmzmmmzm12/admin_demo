@@ -9,6 +9,7 @@ import {
   getVideoDetail,
   getVideos,
   translateSubtitles,
+  updateSubtitle,
 } from '../api/videos'
 import type { SubtitlePayload, VideoSearchParams } from '../types/admin'
 
@@ -47,6 +48,26 @@ export function useDeleteSubtitleMutation() {
     mutationFn: ({ videoId, subtitleId }: { videoId: string; subtitleId: string }) => deleteSubtitle(videoId, subtitleId),
     onSuccess: (video) => {
       queryClient.invalidateQueries({ queryKey: ['video', video.id] })
+    },
+  })
+}
+
+export function useUpdateSubtitleMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      videoId,
+      subtitleId,
+      payload,
+    }: {
+      videoId: string
+      subtitleId: string
+      payload: SubtitlePayload
+    }) => updateSubtitle(videoId, subtitleId, payload),
+    onSuccess: (video) => {
+      queryClient.invalidateQueries({ queryKey: ['video', video.id] })
+      queryClient.invalidateQueries({ queryKey: ['videos'] })
     },
   })
 }

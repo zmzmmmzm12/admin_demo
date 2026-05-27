@@ -71,13 +71,15 @@ export function Pagination({ total, curr, limit, movePage }: PaginationProps) {
 
   return (
     <div className="flex items-center justify-center gap-1 p-5 pb-8">
+      {/*
+        Keep cursor behavior explicit per control:
+        - interactive: cursor-pointer
+        - unavailable: disabled + cursor-not-allowed
+      */}
       <button
         type="button"
-        className={`flex size-7 items-center justify-center rounded-md border border-gray-400 text-gray-400 ${
-          totalPages === 0 || maxPage === 5
-            ? "cursor-default opacity-25"
-            : "cursor-pointer"
-        }`}
+        className="flex size-7 cursor-pointer items-center justify-center rounded-md border border-gray-400 text-gray-400 disabled:cursor-not-allowed disabled:opacity-25"
+        disabled={totalPages === 0 || maxPage === 5}
         onClick={onFirst}
       >
         <span className="material-symbols-outlined text-xl">first_page</span>
@@ -85,11 +87,8 @@ export function Pagination({ total, curr, limit, movePage }: PaginationProps) {
 
       <button
         type="button"
-        className={`flex size-7 items-center justify-center rounded-md border border-gray-400 text-gray-400 ${
-          totalPages === 0 || maxPage === 5
-            ? "cursor-default opacity-25"
-            : "cursor-pointer"
-        }`}
+        className="flex size-7 cursor-pointer items-center justify-center rounded-md border border-gray-400 text-gray-400 disabled:cursor-not-allowed disabled:opacity-25"
+        disabled={totalPages === 0 || maxPage === 5}
         onClick={onPrev}
       >
         <span className="material-symbols-outlined text-xl">chevron_left</span>
@@ -104,11 +103,12 @@ export function Pagination({ total, curr, limit, movePage }: PaginationProps) {
           <button
             type="button"
             key={page}
-            className={`flex h-7 min-w-[1.75rem] items-center justify-center rounded-md border px-2 text-sm tabular-nums ${
+            className={`flex h-7 min-w-[1.75rem] cursor-pointer items-center justify-center rounded-md border px-2 text-sm tabular-nums disabled:cursor-not-allowed ${
               currentPage === page
-                ? "cursor-default border-indigo-500 text-indigo-500 dark:border-indigo-400 dark:text-indigo-300"
-                : "cursor-pointer border-gray-400 text-gray-400 dark:border-slate-500 dark:text-slate-400"
+                ? "border-indigo-500 text-indigo-500 dark:border-indigo-400 dark:text-indigo-300"
+                : "border-gray-400 text-gray-400 dark:border-slate-500 dark:text-slate-400"
             }`}
+            disabled={currentPage === page}
             onClick={() => onPage(page)}
           >
             {page}
@@ -118,11 +118,8 @@ export function Pagination({ total, curr, limit, movePage }: PaginationProps) {
 
       <button
         type="button"
-        className={`flex size-7 items-center justify-center rounded-md border border-gray-400 text-gray-400 ${
-          totalPages === 0 || maxPage >= totalPages
-            ? "cursor-default opacity-25"
-            : "cursor-pointer"
-        }`}
+        className="flex size-7 cursor-pointer items-center justify-center rounded-md border border-gray-400 text-gray-400 disabled:cursor-not-allowed disabled:opacity-25"
+        disabled={totalPages === 0 || maxPage >= totalPages}
         onClick={onNext}
       >
         <span className="material-symbols-outlined text-xl">chevron_right</span>
@@ -130,11 +127,8 @@ export function Pagination({ total, curr, limit, movePage }: PaginationProps) {
 
       <button
         type="button"
-        className={`flex size-7 items-center justify-center rounded-md border border-gray-400 text-gray-400 ${
-          totalPages === 0 || maxPage >= totalPages
-            ? "cursor-default opacity-25"
-            : "cursor-pointer"
-        }`}
+        className="flex size-7 cursor-pointer items-center justify-center rounded-md border border-gray-400 text-gray-400 disabled:cursor-not-allowed disabled:opacity-25"
+        disabled={totalPages === 0 || maxPage >= totalPages}
         onClick={onLast}
       >
         <span className="material-symbols-outlined text-xl">last_page</span>

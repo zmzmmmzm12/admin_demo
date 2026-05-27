@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { messages, type Locale, type MessageKey } from '../i18n/messages'
+import { i18n, type Locale } from '../i18n'
 
 export type ThemeMode = 'light' | 'dark'
 
@@ -17,7 +17,6 @@ interface PreferencesContextValue {
   theme: ThemeMode
   setTheme: (theme: ThemeMode) => void
   toggleTheme: () => void
-  t: (key: MessageKey, params?: Record<string, string | number>) => string
 }
 
 const THEME_STORAGE_KEY = 'admin-demo-theme'
@@ -43,20 +42,6 @@ function detectInitialLocale(): Locale {
   return navigator.language.toLowerCase().startsWith('ko') ? 'ko' : 'en'
 }
 
-function translate(locale: Locale, key: MessageKey, params?: Record<string, string | number>) {
-  let template: string = messages[locale][key]
-
-  if (!params) {
-    return template
-  }
-
-  Object.entries(params).forEach(([name, value]) => {
-    template = template.replaceAll(`{${name}}`, String(value))
-  })
-
-  return template
-}
-
 export function AppPreferencesProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeMode>(detectInitialTheme)
   const [locale, setLocaleState] = useState<Locale>(detectInitialLocale)
@@ -71,6 +56,7 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem(LOCALE_STORAGE_KEY, locale)
     document.documentElement.lang = locale
+    void i18n.changeLanguage(locale)
   }, [locale])
 
   useEffect(() => {
@@ -114,7 +100,6 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
           rootElement.classList.remove('theme-switching')
         }, 140)
       },
-      t: (key, params) => translate(locale, key, params),
     }),
     [locale, theme],
   )

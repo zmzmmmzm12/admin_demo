@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import App from './App'
 import { DialogRenderer } from './components/dialog/DialogRenderer'
 import { AppPreferencesProvider } from './contexts/AppPreferencesContext'
+import './i18n'
 import './index.css'
 
 const queryClient = new QueryClient({
