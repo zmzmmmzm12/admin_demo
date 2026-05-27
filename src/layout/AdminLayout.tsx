@@ -11,14 +11,22 @@ import { useAppPreferences } from "../contexts/AppPreferencesContext";
 
 const menus: Array<{
   to: string;
-  key: "대시보드" | "회원 관리" | "공지사항 관리" | "영상 관리";
+  key:
+    | "대시보드"
+    | "회원 관리"
+    | "공지사항 관리"
+    | "설문 관리"
+    | "영상 관리"
+    | "실시간 관리";
   icon: string;
   end?: boolean;
 }> = [
   { to: "/", key: "대시보드", icon: "space_dashboard", end: true },
   { to: "/users", key: "회원 관리", icon: "group" },
   { to: "/notices", key: "공지사항 관리", icon: "campaign" },
+  { to: "/surveys", key: "설문 관리", icon: "quiz" },
   { to: "/videos", key: "영상 관리", icon: "movie" },
+  { to: "/live", key: "실시간 관리", icon: "live_tv" },
 ];
 
 export function AdminLayout() {

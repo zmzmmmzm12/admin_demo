@@ -127,3 +127,55 @@ export interface SubtitlePayload {
   endTime: string
   text: string
 }
+
+export type SurveyStatus = 'draft' | 'published' | 'closed'
+export type SurveyQuestionType =
+  | 'single'
+  | 'multiple'
+  | 'dropdown'
+  | 'shortText'
+  | 'longText'
+  | 'ox'
+  | 'linearScale'
+  | 'score'
+
+export interface SurveyQuestion {
+  id: string
+  title: string
+  type: SurveyQuestionType
+  required: boolean
+  options: string[]
+}
+
+export interface SurveyItem {
+  id: string
+  title: string
+  status: SurveyStatus
+  startDate: string
+  endDate: string
+  description: string
+  responseCount: number
+  updatedAt: string
+  questions: SurveyQuestion[]
+}
+
+export interface SurveySearchParams {
+  page: number
+  pageSize: number
+  keyword: string
+  status: 'all' | SurveyStatus
+}
+
+export interface SurveyListResponse {
+  data: SurveyItem[]
+  totalCount: number
+}
+
+export interface SurveySavePayload {
+  title: string
+  status: SurveyStatus
+  startDate: string
+  endDate: string
+  description: string
+  questions: SurveyQuestion[]
+}

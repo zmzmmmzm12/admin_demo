@@ -1,11 +1,18 @@
 import { delay, http, HttpResponse } from 'msw'
-import { dashboardAlertsSeed, dashboardTasksSeed, dashboardTrendSeed, noticesSeed, videosSeed } from '../data/admin'
+import { dashboardAlertsSeed, dashboardTasksSeed, dashboardTrendSeed, noticesSeed, surveysSeed, videosSeed } from '../data/admin'
 import { userActivities, users as seededUsers } from '../data/users'
-import type { Notice, NoticeStatus, SubtitleTrack, VideoDetail, VideoStatus } from '../types/admin'
+import type { Notice, NoticeStatus, SubtitleTrack, SurveyItem, SurveyQuestion, SurveyStatus, VideoDetail, VideoStatus } from '../types/admin'
 import type { User as UserEntity, UserRole, UserStatus } from '../types/user'
 
 const userDb: UserEntity[] = seededUsers.map((user) => ({ ...user }))
 const noticeDb: Notice[] = noticesSeed.map((notice) => ({ ...notice }))
+const surveyDb: SurveyItem[] = surveysSeed.map((survey) => ({
+  ...survey,
+  questions: survey.questions.map((question) => ({
+    ...question,
+    options: [...question.options],
+  })),
+}))
 const videoDb: VideoDetail[] = videosSeed.map((video) => ({
   ...video,
   subtitles: video.subtitles.map((subtitle) => ({ ...subtitle })),
@@ -64,6 +71,10 @@ function isNoticeStatus(value: string): value is NoticeStatus {
 
 function isVideoStatus(value: string): value is VideoStatus {
   return value === 'ready' || value === 'encoding' || value === 'blocked'
+}
+
+function isSurveyStatus(value: string): value is SurveyStatus {
+  return value === 'draft' || value === 'published' || value === 'closed'
 }
 
 function paginate<T>(list: T[], page: number, pageSize: number) {
@@ -289,6 +300,165 @@ export const handlers = [
       return HttpResponse.json({ message: '공지사항을 찾을 수 없습니다.' }, { status: 404 })
     }
     const [removed] = noticeDb.splice(index, 1)
+    return HttpResponse.json({ data: { id: removed.id } })
+  }),
+
+  http.get('/api/surveys', async ({ request }) => {
+    await delay(260)
+
+    const url = new URL(request.url)
+    const page = Number(url.searchParams.get('page') ?? '1')
+    const pageSize = Number(url.searchParams.get('pageSize') ?? '10')
+    const keyword = (url.searchParams.get('keyword') ?? '').toLowerCase().trim()
+    const status = url.searchParams.get('status') ?? 'all'
+
+    let filtered = surveyDb
+      .slice()
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+
+    if (keyword) {
+      filtered = filtered.filter(
+        (survey) =>
+          survey.title.toLowerCase().includes(keyword) ||
+          survey.description.toLowerCase().includes(keyword),
+      )
+    }
+
+    if (status !== 'all' && isSurveyStatus(status)) {
+      filtered = filtered.filter((survey) => survey.status === status)
+    }
+
+    return HttpResponse.json({
+      data: paginate(filtered, page, pageSize),
+      totalCount: filtered.length,
+    })
+  }),
+
+  http.get('/api/surveys/:id', async ({ params }) => {
+    await delay(220)
+    const survey = surveyDb.find((item) => item.id === params.id)
+
+    if (!survey) {
+      return HttpResponse.json({ message: '설문을 찾을 수 없습니다.' }, { status: 404 })
+    }
+
+    return HttpResponse.json({ data: survey })
+  }),
+
+  http.post('/api/surveys', async ({ request }) => {
+    await delay(280)
+    const payload = (await request.json()) as {
+      title?: string
+      status?: string
+      startDate?: string
+      endDate?: string
+      description?: string
+      questions?: SurveyQuestion[]
+    }
+
+    if (
+      !payload.title ||
+      !payload.status ||
+      !isSurveyStatus(payload.status) ||
+      !payload.startDate ||
+      !payload.endDate ||
+      !Array.isArray(payload.questions)
+    ) {
+      return HttpResponse.json({ message: '입력값이 올바르지 않습니다.' }, { status: 400 })
+    }
+
+    const now = new Date().toISOString()
+    const newSurvey: SurveyItem = {
+      id: `SV-${3000 + surveyDb.length + 1}`,
+      title: payload.title.trim(),
+      status: payload.status,
+      startDate: payload.startDate,
+      endDate: payload.endDate,
+      description: payload.description?.trim() ?? '',
+      responseCount: 0,
+      updatedAt: now,
+      questions: payload.questions.map((question, index) => ({
+        id: question.id || `SVQ-${Date.now()}-${index + 1}`,
+        title: question.title,
+        type: question.type,
+        required: Boolean(question.required),
+        options: question.options ?? [],
+      })),
+    }
+
+    surveyDb.unshift(newSurvey)
+    return HttpResponse.json({ data: newSurvey }, { status: 201 })
+  }),
+
+  http.put('/api/surveys/:id', async ({ params, request }) => {
+    await delay(280)
+    const survey = surveyDb.find((item) => item.id === params.id)
+
+    if (!survey) {
+      return HttpResponse.json({ message: '설문을 찾을 수 없습니다.' }, { status: 404 })
+    }
+
+    const payload = (await request.json()) as {
+      title?: string
+      status?: string
+      startDate?: string
+      endDate?: string
+      description?: string
+      questions?: SurveyQuestion[]
+    }
+
+    if (
+      !payload.title ||
+      !payload.status ||
+      !isSurveyStatus(payload.status) ||
+      !payload.startDate ||
+      !payload.endDate ||
+      !Array.isArray(payload.questions)
+    ) {
+      return HttpResponse.json({ message: '입력값이 올바르지 않습니다.' }, { status: 400 })
+    }
+
+    survey.title = payload.title.trim()
+    survey.status = payload.status
+    survey.startDate = payload.startDate
+    survey.endDate = payload.endDate
+    survey.description = payload.description?.trim() ?? ''
+    survey.updatedAt = new Date().toISOString()
+    survey.questions = payload.questions.map((question, index) => ({
+      id: question.id || `SVQ-${Date.now()}-${index + 1}`,
+      title: question.title,
+      type: question.type,
+      required: Boolean(question.required),
+      options: question.options ?? [],
+    }))
+
+    return HttpResponse.json({ data: survey })
+  }),
+
+  http.post('/api/surveys/bulk-delete', async ({ request }) => {
+    await delay(220)
+    const payload = (await request.json()) as { ids?: string[] }
+    const ids = Array.isArray(payload.ids) ? payload.ids : []
+    const idSet = new Set(ids)
+
+    for (let index = surveyDb.length - 1; index >= 0; index -= 1) {
+      if (idSet.has(surveyDb[index].id)) {
+        surveyDb.splice(index, 1)
+      }
+    }
+
+    return HttpResponse.json({ data: { ids } })
+  }),
+
+  http.delete('/api/surveys/:id', async ({ params }) => {
+    await delay(220)
+    const index = surveyDb.findIndex((item) => item.id === params.id)
+
+    if (index < 0) {
+      return HttpResponse.json({ message: '설문을 찾을 수 없습니다.' }, { status: 404 })
+    }
+
+    const [removed] = surveyDb.splice(index, 1)
     return HttpResponse.json({ data: { id: removed.id } })
   }),
 

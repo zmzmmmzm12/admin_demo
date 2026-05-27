@@ -1,4 +1,4 @@
-import type { DashboardAlert, DashboardTask, DashboardTrendPoint, Notice, VideoDetail } from '../types/admin'
+import type { DashboardAlert, DashboardTask, DashboardTrendPoint, Notice, SurveyItem, VideoDetail } from '../types/admin'
 
 export const dashboardTrendSeed: DashboardTrendPoint[] = [
   { date: '2026-05-01', signups: 28, visitors: 512 },
@@ -151,5 +151,86 @@ export const videosSeed: VideoDetail[] = [
     thumbnailUrl: 'https://images.unsplash.com/photo-1529074963764-98f45c47344b?auto=format&fit=crop&w=640&q=80',
     description: '파트너사 리더 인터뷰 풀버전 콘텐츠입니다.',
     subtitles: [],
+  },
+]
+
+export const surveysSeed: SurveyItem[] = [
+  {
+    id: 'SV-3001',
+    title: '5월 고객 만족도 설문',
+    status: 'published',
+    startDate: '2026-05-01',
+    endDate: '2026-05-31',
+    description: '앱 사용성, 기능 만족도, 개선 요청을 수집하는 월간 설문입니다.',
+    responseCount: 312,
+    updatedAt: '2026-05-24T14:08:00+09:00',
+    questions: [
+      {
+        id: 'SVQ-1',
+        title: '서비스 전반 만족도를 선택해주세요.',
+        type: 'single',
+        required: true,
+        options: ['매우 만족', '만족', '보통', '불만족', '매우 불만족'],
+      },
+      {
+        id: 'SVQ-2',
+        title: '자주 사용하는 기능을 모두 선택해주세요.',
+        type: 'multiple',
+        required: false,
+        options: ['대시보드', '회원 관리', '영상 관리', '공지사항 관리'],
+      },
+      {
+        id: 'SVQ-3',
+        title: '개선이 필요한 점을 자유롭게 작성해주세요.',
+        type: 'longText',
+        required: false,
+        options: [],
+      },
+    ],
+  },
+  {
+    id: 'SV-3002',
+    title: '신규 기능 베타 피드백',
+    status: 'draft',
+    startDate: '2026-06-01',
+    endDate: '2026-06-15',
+    description: '신규 베타 기능의 UX 피드백 수집을 위한 사전 설문 초안입니다.',
+    responseCount: 0,
+    updatedAt: '2026-05-22T09:40:00+09:00',
+    questions: [
+      {
+        id: 'SVQ-4',
+        title: '새로운 UI가 직관적인가요?',
+        type: 'single',
+        required: true,
+        options: ['예', '보통', '아니오'],
+      },
+    ],
+  },
+  {
+    id: 'SV-3003',
+    title: '분기 운영팀 만족도 조사',
+    status: 'closed',
+    startDate: '2026-04-01',
+    endDate: '2026-04-15',
+    description: '운영툴 지원 품질 및 요청 처리속도 관련 설문입니다.',
+    responseCount: 187,
+    updatedAt: '2026-04-16T18:20:00+09:00',
+    questions: [
+      {
+        id: 'SVQ-5',
+        title: '운영 요청 처리 속도에 만족하시나요?',
+        type: 'single',
+        required: true,
+        options: ['만족', '보통', '불만족'],
+      },
+      {
+        id: 'SVQ-6',
+        title: '추가로 필요한 지원 항목을 작성해주세요.',
+        type: 'longText',
+        required: false,
+        options: [],
+      },
+    ],
   },
 ]

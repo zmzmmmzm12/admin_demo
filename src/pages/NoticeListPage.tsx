@@ -137,7 +137,10 @@ export function NoticeListPage() {
 
   return (
     <section>
-      <PageHeader title={title} description={t("등록/수정/상세 확인이 가능한 공지 관리 화면입니다.")} />
+      <PageHeader
+        title={title}
+        description={t("등록/수정/상세 확인이 가능한 공지 관리 화면입니다.")}
+      />
 
       <div className="mx-3 mb-8 rounded-md bg-white shadow-md dark:bg-dark-surface">
         <div className="flex flex-wrap items-center justify-between gap-2 p-5">
@@ -155,9 +158,7 @@ export function NoticeListPage() {
                 }
               >
                 <option value="all">{t("전체 상태")}</option>
-                <option value="published">
-                  {t("게시")}
-                </option>
+                <option value="published">{t("게시")}</option>
                 <option value="draft">{t("임시저장")}</option>
               </select>
               <span className="material-symbols-outlined pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-sm text-slate-500 dark:text-slate-400">
@@ -182,7 +183,7 @@ export function NoticeListPage() {
               className="cursor-pointer rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 dark:border-dark-border dark:bg-dark-surface-alt dark:text-slate-100"
               onClick={onResetFilters}
             >
-              {t("필터 초기화")}
+              {t("초기화")}
             </button>
           </form>
 
@@ -202,7 +203,8 @@ export function NoticeListPage() {
                         setSelectedIds([]);
                         openAlert(t("처리되었습니다."));
                       },
-                      onError: () => openAlert(t("처리 중 오류가 발생했습니다.")),
+                      onError: () =>
+                        openAlert(t("처리 중 오류가 발생했습니다.")),
                     }),
                   )
                 }
@@ -256,9 +258,7 @@ export function NoticeListPage() {
               <th className="align-middle px-6 py-3 whitespace-nowrap">
                 {t("카테고리")}
               </th>
-              <th className="align-middle px-4 py-3 text-left">
-                {t("제목")}
-              </th>
+              <th className="align-middle px-4 py-3 text-left">{t("제목")}</th>
               <th className="align-middle px-6 py-3 whitespace-nowrap">
                 {t("작성자")}
               </th>
@@ -437,7 +437,8 @@ export function NoticeListPage() {
                                   );
                                   openAlert(t("처리되었습니다."));
                                 },
-                                onError: () => openAlert(t("처리 중 오류가 발생했습니다.")),
+                                onError: () =>
+                                  openAlert(t("처리 중 오류가 발생했습니다.")),
                               }),
                             )
                           }
