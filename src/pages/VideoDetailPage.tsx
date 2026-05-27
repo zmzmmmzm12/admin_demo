@@ -301,13 +301,21 @@ export function VideoDetailPage() {
   };
 
   const normalizeDraftItemsForSnapshot = (items: DraftSubtitleItem[]) =>
-    items.map(({ language: lang, label: lb, startTime: start, endTime: end, text: tx }) => ({
-      language: lang,
-      label: lb,
-      startTime: start,
-      endTime: end,
-      text: tx,
-    }));
+    items.map(
+      ({
+        language: lang,
+        label: lb,
+        startTime: start,
+        endTime: end,
+        text: tx,
+      }) => ({
+        language: lang,
+        label: lb,
+        startTime: start,
+        endTime: end,
+        text: tx,
+      }),
+    );
 
   const buildModalSnapshot = (args: {
     languageValue: string;
@@ -460,6 +468,7 @@ export function VideoDetailPage() {
     }
 
     return null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     draftItems,
     editingDraftLocalId,
@@ -469,7 +478,6 @@ export function VideoDetailPage() {
     label,
     startTime,
     text,
-    t,
   ]);
 
   const validatePayload = (payload: SubtitlePayload) => {
@@ -533,7 +541,7 @@ export function VideoDetailPage() {
   const openEditModal = (subtitle: SubtitleTrack) => {
     const initialDraftItems: DraftSubtitleItem[] = [
       {
-        localId: `draft-${Date.now()}`,
+        localId: `draft-${new Date()}`,
         language: subtitle.language,
         label: subtitle.label,
         startTime: subtitle.startTime,
