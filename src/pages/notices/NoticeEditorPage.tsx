@@ -184,7 +184,7 @@ function NoticeEditorForm({
   };
 
   return (
-    <section>
+    <section className="notice-editor-scope">
       <PageHeader
         title={isEdit ? t("공지사항 수정") : t("공지사항 등록")}
         description={t("에디터를 통해 공지사항 내용을 작성합니다.")}

@@ -23,8 +23,8 @@ export function NoticeDetailPage() {
     return null
   }
 
-    return (
-    <section>
+  return (
+    <section className="notice-preview-scope">
       <PageHeader
         title={headerTitle}
         description={t('공지사항 내용 확인 및 수정')}
@@ -61,7 +61,7 @@ export function NoticeDetailPage() {
               </span>
             </div>
 
-            <div className="mt-4" data-color-mode={theme === 'dark' ? 'dark' : 'light'}>
+            <div className="wmde-markdown-var mt-4" data-color-mode={theme === 'dark' ? 'dark' : 'light'}>
               <MDEditor.Markdown source={notice.content} />
             </div>
 
