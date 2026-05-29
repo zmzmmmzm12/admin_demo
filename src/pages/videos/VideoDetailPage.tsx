@@ -18,7 +18,7 @@ import type { SubtitlePayload, SubtitleTrack } from "../../types/admin";
 import { SubtitleEditorModal } from "./components/SubtitleEditorModal";
 
 const PREVIEW_VIDEO_URL =
-  "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
+  "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
 
 const DEFAULT_SUBTITLE_FORM = {
   language: "ko",
@@ -228,8 +228,6 @@ export function VideoDetailPage() {
   const [endTime, setEndTime] = useState(DEFAULT_SUBTITLE_FORM.endTime);
   const [text, setText] = useState(DEFAULT_SUBTITLE_FORM.text);
   const [draftItems, setDraftItems] = useState<DraftSubtitleItem[]>([]);
-
-  const [currentTime, setCurrentTime] = useState(0);
   const modalInitialSnapshotRef = useRef<SubtitleModalSnapshot | null>(null);
 
   const video = detailQuery.data;
@@ -256,40 +254,6 @@ export function VideoDetailPage() {
   const isSaving =
     createSubtitleMutation.isPending || updateSubtitleMutation.isPending;
 
-  const startMilliseconds = parseTimeToMilliseconds(
-    normalizeTimeForApi(startTime, useHourInput),
-  );
-  const endMilliseconds = parseTimeToMilliseconds(
-    normalizeTimeForApi(endTime, useHourInput),
-  );
-
-  const showPreviewSubtitle =
-    text.trim().length > 0 &&
-    startMilliseconds !== null &&
-    endMilliseconds !== null &&
-    startMilliseconds < endMilliseconds &&
-    currentTime * 1000 >= startMilliseconds &&
-    currentTime * 1000 <= endMilliseconds;
-
-  const activePreviewTexts = useMemo(() => {
-    if (draftItems.length > 0) {
-      return draftItems
-        .filter((item) => {
-          const start = parseTimeToMilliseconds(item.startTime);
-          const end = parseTimeToMilliseconds(item.endTime);
-          if (start === null || end === null) return false;
-          return currentTime * 1000 >= start && currentTime * 1000 <= end;
-        })
-        .map((item) => item.text)
-        .filter((item) => item.trim().length > 0);
-    }
-
-    if (showPreviewSubtitle) {
-      return [text];
-    }
-
-    return [];
-  }, [currentTime, draftItems, showPreviewSubtitle, text]);
 
   const resetModalForm = () => {
     setEditingSubtitleId(null);
@@ -528,7 +492,6 @@ export function VideoDetailPage() {
     const initialDraftItems: DraftSubtitleItem[] = [];
 
     resetModalForm();
-    setCurrentTime(0);
     modalInitialSnapshotRef.current = buildModalSnapshot({
       languageValue: DEFAULT_SUBTITLE_FORM.language,
       labelValue: DEFAULT_SUBTITLE_FORM.label,
@@ -543,7 +506,7 @@ export function VideoDetailPage() {
   const openEditModal = (subtitle: SubtitleTrack) => {
     const initialDraftItems: DraftSubtitleItem[] = [
       {
-        localId: `draft-${new Date()}`,
+        localId: "draft-edit-initial",
         language: subtitle.language,
         label: subtitle.label,
         startTime: subtitle.startTime,
@@ -560,7 +523,6 @@ export function VideoDetailPage() {
     setText("");
     setDraftItems(initialDraftItems);
     setEditingDraftLocalId(null);
-    setCurrentTime(0);
     modalInitialSnapshotRef.current = buildModalSnapshot({
       languageValue: subtitle.language,
       labelValue: subtitle.label,
@@ -574,7 +536,6 @@ export function VideoDetailPage() {
 
   const forceCloseModal = () => {
     setModalOpen(false);
-    setCurrentTime(0);
     modalInitialSnapshotRef.current = null;
     resetModalForm();
   };
@@ -948,7 +909,6 @@ export function VideoDetailPage() {
         title={editingSubtitleId ? t("자막 수정") : t("언어 추가")}
         videoThumbnailUrl={video?.thumbnailUrl}
         previewVideoUrl={PREVIEW_VIDEO_URL}
-        activePreviewTexts={activePreviewTexts}
         language={language}
         label={label}
         startTime={startTime}
@@ -960,7 +920,6 @@ export function VideoDetailPage() {
         editingDraftLocalId={editingDraftLocalId}
         isSaving={isSaving}
         onClose={closeModal}
-        onTimeUpdate={setCurrentTime}
         onLanguageChange={setLanguage}
         onLabelChange={setLabel}
         onStartTimeChange={(value) =>

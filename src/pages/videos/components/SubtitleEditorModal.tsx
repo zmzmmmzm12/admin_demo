@@ -1,3 +1,4 @@
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AppModal } from "../../../components/modal/AppModal";
 import type { SubtitlePayload } from "../../../types/admin";
@@ -11,7 +12,6 @@ interface SubtitleEditorModalProps {
   title: string;
   videoThumbnailUrl?: string;
   previewVideoUrl: string;
-  activePreviewTexts: string[];
   language: string;
   label: string;
   startTime: string;
@@ -23,7 +23,6 @@ interface SubtitleEditorModalProps {
   editingDraftLocalId: string | null;
   isSaving: boolean;
   onClose: () => void;
-  onTimeUpdate: (nextTime: number) => void;
   onLanguageChange: (value: string) => void;
   onLabelChange: (value: string) => void;
   onStartTimeChange: (value: string) => void;
@@ -36,12 +35,206 @@ interface SubtitleEditorModalProps {
   formatInputTime: (value: string) => string;
 }
 
+interface PreviewCue {
+  id: string;
+  language: string;
+  label: string;
+  startTime: string;
+  endTime: string;
+  text: string;
+}
+
+function normalizeCueTime(value: string) {
+  const trimmed = value.trim();
+
+  const hourMatch = trimmed.match(/^(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?$/);
+
+  if (hourMatch) {
+    const [, hh, mm, ss, msRaw] = hourMatch;
+    const ms = (msRaw ?? "000").padEnd(3, "0");
+    return `${hh}:${mm}:${ss}.${ms}`;
+  }
+
+  const minuteMatch = trimmed.match(/^(\d{2}):(\d{2})(?:\.(\d{1,3}))?$/);
+
+  if (minuteMatch) {
+    const [, mm, ss, msRaw] = minuteMatch;
+    const ms = (msRaw ?? "000").padEnd(3, "0");
+    return `00:${mm}:${ss}.${ms}`;
+  }
+
+  return null;
+}
+
+function cueTimeToMilliseconds(value: string) {
+  const match = value.match(/^(\d{2}):(\d{2}):(\d{2})\.(\d{3})$/);
+
+  if (!match) {
+    return null;
+  }
+
+  const [, hh, mm, ss, ms] = match;
+  const hours = Number(hh);
+  const minutes = Number(mm);
+  const seconds = Number(ss);
+  const milliseconds = Number(ms);
+
+  if (
+    [hours, minutes, seconds, milliseconds].some((part) => Number.isNaN(part))
+  ) {
+    return null;
+  }
+
+  return ((hours * 60 + minutes) * 60 + seconds) * 1000 + milliseconds;
+}
+
+function toSecondsFromCueTime(value: string) {
+  const normalized = normalizeCueTime(value);
+
+  if (!normalized) {
+    return null;
+  }
+
+  const milliseconds = cueTimeToMilliseconds(normalized);
+
+  if (milliseconds === null) {
+    return null;
+  }
+
+  return milliseconds / 1000;
+}
+
+function buildFormPreviewCue(args: {
+  editingDraftLocalId: string | null;
+  language: string;
+  label: string;
+  startTime: string;
+  endTime: string;
+  text: string;
+}) {
+  const start = normalizeCueTime(args.startTime);
+  const end = normalizeCueTime(args.endTime);
+  const previewText = args.text.trim();
+
+  if (!start || !end || previewText.length === 0) {
+    return null;
+  }
+
+  const startMs = cueTimeToMilliseconds(start);
+  const endMs = cueTimeToMilliseconds(end);
+
+  if (startMs === null || endMs === null || startMs >= endMs) {
+    return null;
+  }
+
+  return {
+    id: args.editingDraftLocalId ?? "draft-live-preview",
+    language: args.language.trim() || "ko",
+    label: args.label.trim() || args.language.trim() || "ko",
+    startTime: start,
+    endTime: end,
+    text: previewText,
+  } satisfies PreviewCue;
+}
+
+function buildPreviewCues(args: {
+  draftItems: DraftSubtitleItem[];
+  editingDraftLocalId: string | null;
+  language: string;
+  label: string;
+  startTime: string;
+  endTime: string;
+  text: string;
+}) {
+  const draftCues: PreviewCue[] = args.draftItems
+    .map((item) => {
+      const start = normalizeCueTime(item.startTime);
+      const end = normalizeCueTime(item.endTime);
+      const cueText = item.text.trim();
+
+      if (!start || !end || cueText.length === 0) {
+        return null;
+      }
+
+      const startMs = cueTimeToMilliseconds(start);
+      const endMs = cueTimeToMilliseconds(end);
+
+      if (startMs === null || endMs === null || startMs >= endMs) {
+        return null;
+      }
+
+      return {
+        id: item.localId,
+        language: item.language.trim() || "ko",
+        label: item.label.trim() || item.language.trim() || "ko",
+        startTime: start,
+        endTime: end,
+        text: cueText,
+      } satisfies PreviewCue;
+    })
+    .filter((item): item is PreviewCue => Boolean(item));
+
+  const formCue = buildFormPreviewCue({
+    editingDraftLocalId: args.editingDraftLocalId,
+    language: args.language,
+    label: args.label,
+    startTime: args.startTime,
+    endTime: args.endTime,
+    text: args.text,
+  });
+
+  if (!formCue) {
+    return draftCues;
+  }
+
+  if (args.editingDraftLocalId) {
+    return draftCues.map((item) =>
+      item.id === args.editingDraftLocalId ? formCue : item,
+    );
+  }
+
+  return [...draftCues, formCue];
+}
+
+function buildVttFromCues(cues: PreviewCue[]) {
+  const sorted = [...cues].sort((left, right) => {
+    const leftMs = cueTimeToMilliseconds(left.startTime) ?? 0;
+    const rightMs = cueTimeToMilliseconds(right.startTime) ?? 0;
+
+    return leftMs - rightMs;
+  });
+
+  const blocks = sorted.map((cue, index) => {
+    return `${index + 1}\n${cue.startTime} --> ${cue.endTime}\n${cue.text}`;
+  });
+
+  return `WEBVTT\n\n${blocks.join("\n\n")}`;
+}
+
+function destroyPlayer(
+  playerRef: React.MutableRefObject<PlayerInstance | null>,
+) {
+  if (!playerRef.current) {
+    return;
+  }
+
+  playerRef.current.destroy();
+  playerRef.current = null;
+}
+
+function revokePreviewUrls(previewUrlsRef: React.MutableRefObject<string[]>) {
+  previewUrlsRef.current.forEach((url) => {
+    window.URL.revokeObjectURL(url);
+  });
+
+  previewUrlsRef.current = [];
+}
+
 export function SubtitleEditorModal({
   open,
   title,
   videoThumbnailUrl,
   previewVideoUrl,
-  activePreviewTexts,
   language,
   label,
   startTime,
@@ -53,7 +246,6 @@ export function SubtitleEditorModal({
   editingDraftLocalId,
   isSaving,
   onClose,
-  onTimeUpdate,
   onLanguageChange,
   onLabelChange,
   onStartTimeChange,
@@ -66,6 +258,153 @@ export function SubtitleEditorModal({
   formatInputTime,
 }: SubtitleEditorModalProps) {
   const { t } = useTranslation();
+
+  const playerRef = useRef<PlayerInstance | null>(null);
+  const previewUrlsRef = useRef<string[]>([]);
+
+  const playerId = useId();
+  const playerContainerId = `admin-subtitle-player-${playerId.replace(
+    /:/g,
+    "",
+  )}`;
+
+  const [playerError, setPlayerError] = useState<string | null>(null);
+
+  const sdkMissingError =
+    open && !window.Player ? t("플레이어 SDK를 찾을 수 없습니다.") : null;
+
+  const visiblePlayerError = sdkMissingError ?? playerError;
+
+  const previewCues = useMemo(
+    () =>
+      buildPreviewCues({
+        draftItems,
+        editingDraftLocalId,
+        language,
+        label,
+        startTime,
+        endTime,
+        text,
+      }),
+    [
+      draftItems,
+      editingDraftLocalId,
+      endTime,
+      label,
+      language,
+      startTime,
+      text,
+    ],
+  );
+
+  const onClickEditDraftItem = (item: DraftSubtitleItem) => {
+    onStartEditDraftItem(item);
+
+    const seekTime = toSecondsFromCueTime(item.startTime);
+
+    if (seekTime === null || !playerRef.current?.getVideoElement) {
+      return;
+    }
+
+    const videoElement = playerRef.current.getVideoElement();
+
+    if (!videoElement) {
+      return;
+    }
+
+    videoElement.currentTime = seekTime + 0.0001;
+  };
+
+  useEffect(() => {
+    if (!open || !window.Player) {
+      return;
+    }
+
+    let cancelled = false;
+
+    destroyPlayer(playerRef);
+
+    try {
+      const Player = window.Player;
+
+      playerRef.current = new Player({
+        url: previewVideoUrl,
+        container: `#${playerContainerId}`,
+        wrapper: `${playerContainerId}-root`,
+        thumbnailSrc: videoThumbnailUrl,
+        subtitle: null,
+        events: {
+          error: () => {
+            if (!cancelled) {
+              setPlayerError(t("영상 재생 중 오류가 발생했습니다."));
+            }
+          },
+        },
+      });
+
+      queueMicrotask(() => {
+        if (!cancelled) {
+          setPlayerError(null);
+        }
+      });
+    } catch {
+      queueMicrotask(() => {
+        if (!cancelled) {
+          setPlayerError(t("플레이어를 초기화하지 못했습니다."));
+        }
+      });
+    }
+
+    return () => {
+      cancelled = true;
+      destroyPlayer(playerRef);
+      revokePreviewUrls(previewUrlsRef);
+    };
+  }, [open, playerContainerId, previewVideoUrl, t, videoThumbnailUrl]);
+
+  useEffect(() => {
+    if (!open || !playerRef.current) {
+      return;
+    }
+
+    revokePreviewUrls(previewUrlsRef);
+
+    if (previewCues.length === 0) {
+      playerRef.current.setSubtitle(null);
+      return;
+    }
+
+    const cueByLanguage = new Map<string, PreviewCue[]>();
+
+    previewCues.forEach((cue) => {
+      if (!cueByLanguage.has(cue.language)) {
+        cueByLanguage.set(cue.language, []);
+      }
+
+      cueByLanguage.get(cue.language)?.push(cue);
+    });
+
+    const tracks: PlayerSubtitleSource[] = [];
+
+    cueByLanguage.forEach((cues, lang) => {
+      const trackBlob = new Blob([buildVttFromCues(cues)], {
+        type: "text/vtt;charset=utf-8",
+      });
+      const trackUrl = window.URL.createObjectURL(trackBlob);
+
+      previewUrlsRef.current.push(trackUrl);
+
+      tracks.push({
+        language: lang,
+        label: cues[0]?.label || lang,
+        url: trackUrl,
+        primary: lang === language,
+      });
+    });
+
+    playerRef.current.setSubtitle(tracks, language);
+    playerRef.current.setCaptionLanguage(language);
+  }, [language, open, previewCues]);
 
   return (
     <AppModal open={open} onClose={onClose} zIndex={95}>
@@ -88,27 +427,20 @@ export function SubtitleEditorModal({
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-4">
             <div className="xl:col-span-3 flex">
               <div className="my-auto w-full">
-              <div className="mb-2 text-sm font-semibold text-slate-600 dark:text-slate-200">
-                {t("미리보기")}
+                <div className="mb-2 text-sm font-semibold text-slate-600 dark:text-slate-200">
+                  {t("미리보기")}
+                </div>
+
+                <div className="relative overflow-hidden rounded-md bg-black">
+                  <div id={playerContainerId} className="aspect-video w-full" />
+
+                  {visiblePlayerError && (
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/70 px-4 text-center text-sm text-white">
+                      {visiblePlayerError}
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="relative overflow-hidden rounded-md bg-black">
-                <video
-                  controls
-                  autoPlay
-                  className="aspect-video w-full object-cover"
-                  poster={videoThumbnailUrl}
-                  src={previewVideoUrl}
-                  onTimeUpdate={(event) =>
-                    onTimeUpdate(event.currentTarget.currentTime)
-                  }
-                />
-                {activePreviewTexts.length > 0 && (
-                  <div className="pointer-events-none absolute bottom-4 left-4 right-4 rounded bg-black/60 px-3 py-2 text-center text-sm font-semibold text-white">
-                    {activePreviewTexts.join(" / ")}
-                  </div>
-                )}
-              </div>
-            </div>
             </div>
 
             <div className="xl:col-span-1 flex flex-col gap-3 rounded-md border border-slate-200 p-3 dark:border-dark-border">
@@ -157,6 +489,7 @@ export function SubtitleEditorModal({
                     placeholder={timePlaceholder}
                   />
                 </div>
+
                 <div className="sm:col-span-3">
                   <div className="mb-1 text-xs text-slate-500 dark:text-slate-300">
                     {t("종료 시간")}
@@ -172,6 +505,7 @@ export function SubtitleEditorModal({
                     placeholder={timePlaceholder}
                   />
                 </div>
+
                 <div className="sm:col-span-5">
                   <div className="mb-1 text-xs text-slate-500 dark:text-slate-300">
                     {t("자막 문구")}
@@ -182,6 +516,7 @@ export function SubtitleEditorModal({
                     className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm dark:border-dark-border dark:bg-dark-surface-alt dark:text-slate-100"
                   />
                 </div>
+
                 <div className="flex items-end sm:col-span-1 sm:justify-end">
                   <button
                     type="button"
@@ -194,10 +529,14 @@ export function SubtitleEditorModal({
               </div>
 
               <p className="text-[11px] text-slate-400 dark:text-slate-400">
-                {t("숫자만 입력해도 자동으로 시:분:초.밀리초 형식이 적용됩니다.")}
+                {t(
+                  "숫자만 입력해도 자동으로 시:분:초.밀리초 형식이 적용됩니다.",
+                )}
               </p>
 
-              {liveTimeError && <p className="text-xs text-rose-500">{liveTimeError}</p>}
+              {liveTimeError && (
+                <p className="text-xs text-rose-500">{liveTimeError}</p>
+              )}
 
               {draftItems.length > 0 && (
                 <div className="scroll-custom-container max-h-56 overflow-y-auto rounded-md border border-slate-200 dark:border-dark-border">
@@ -212,9 +551,15 @@ export function SubtitleEditorModal({
                     <thead className="bg-slate-50 text-slate-500 dark:bg-dark-surface-alt dark:text-slate-300">
                       <tr>
                         <th className="px-2 py-1 text-left">#</th>
-                        <th className="px-2 py-1 text-left">{t("시작 시간")}</th>
-                        <th className="px-2 py-1 text-left">{t("종료 시간")}</th>
-                        <th className="px-2 py-1 text-left">{t("자막 문구")}</th>
+                        <th className="px-2 py-1 text-left">
+                          {t("시작 시간")}
+                        </th>
+                        <th className="px-2 py-1 text-left">
+                          {t("종료 시간")}
+                        </th>
+                        <th className="px-2 py-1 text-left">
+                          {t("자막 문구")}
+                        </th>
                         <th className="px-2 py-1 text-right"></th>
                       </tr>
                     </thead>
@@ -241,7 +586,7 @@ export function SubtitleEditorModal({
                               <button
                                 type="button"
                                 className="inline-flex size-6 cursor-pointer items-center justify-center rounded bg-indigo-500 text-white"
-                                onClick={() => onStartEditDraftItem(item)}
+                                onClick={() => onClickEditDraftItem(item)}
                               >
                                 <span className="material-symbols-outlined text-sm">
                                   edit
