@@ -1,12 +1,11 @@
 import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
-import { useLocation, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { HeaderListLink } from "../../components/HeaderListLink";
 import { PageHeader } from "../../components/PageHeader";
 import { StatusBadge } from "../../components/StatusBadge";
 import { useAppPreferences } from "../../contexts/AppPreferencesContext";
 import { useUserDetailQuery } from "../../hooks/useUsersQuery";
-import { resolveListPath } from "../../utils/routeState";
 
 const roleLabelKey = {
   super: "슈퍼관리자",
@@ -17,11 +16,10 @@ const roleLabelKey = {
 export function UserDetailPage() {
   const params = useParams();
   const userId = params.userId;
-  const location = useLocation();
   const { locale } = useAppPreferences();
   const { t } = useTranslation();
   const numberLocale = locale === "ko" ? "ko-KR" : "en-US";
-  const listPath = resolveListPath(location.state, "/users");
+  const listPath = "/users";
 
   if (!userId) {
     return (

@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { type FormEvent, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppCheckbox } from "../../components/AppCheckbox";
 import { PageHeader } from "../../components/PageHeader";
 import { Pagination } from "../../components/Pagination";
@@ -72,7 +72,6 @@ function areNoticeSearchParamsEqual(
 export function NoticeListPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const location = useLocation();
   const [urlSearchParams, setUrlSearchParams] = useSearchParams();
   const { openAlert, openConfirm } = useDialogActions();
 
@@ -214,11 +213,7 @@ export function NoticeListPage() {
             <button
               type="button"
               className="cursor-pointer rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white"
-              onClick={() =>
-                navigate("/notices/new", {
-                  state: { from: `${location.pathname}${location.search}` },
-                })
-              }
+              onClick={() => navigate("/notices/edit")}
             >
               {t("공지사항 등록")}
             </button>
@@ -414,11 +409,7 @@ export function NoticeListPage() {
                           type="button"
                           className="group relative flex size-7 cursor-pointer items-center justify-center rounded-md bg-indigo-500 text-slate-50"
                           onClick={() =>
-                            navigate(`/notices/${notice.id}/edit`, {
-                              state: {
-                                from: `${location.pathname}${location.search}`,
-                              },
-                            })
+                            navigate(`/notices/edit?noticeKey=${notice.id}`)
                           }
                         >
                           <span className="material-symbols-outlined text-lg">

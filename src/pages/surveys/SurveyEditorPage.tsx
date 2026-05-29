@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import DatePickerModule from "react-multi-date-picker";
 import DateObject from "react-date-object";
 import { useTranslation } from "react-i18next";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppCheckbox } from "../../components/AppCheckbox";
 import { HeaderListLink } from "../../components/HeaderListLink";
 import { PageHeader } from "../../components/PageHeader";
@@ -19,7 +19,6 @@ import type {
   SurveyStatus,
 } from "../../types/admin";
 import { getDatePickerLocale } from "../../utils/datePickerLocale";
-import { resolveListPath } from "../../utils/routeState";
 
 const DatePicker =
   (DatePickerModule as unknown as { default?: typeof DatePickerModule })
@@ -138,13 +137,13 @@ function isFixedOptionType(type: SurveyQuestionType) {
 }
 
 export function SurveyEditorPage() {
-  const { surveyId } = useParams<{ surveyId?: string }>();
-  const isEdit = Boolean(surveyId);
+  const [searchParams] = useSearchParams();
+  const surveyKey = searchParams.get("surveyKey") ?? "";
+  const isEdit = Boolean(surveyKey);
   const { t } = useTranslation();
-  const location = useLocation();
-  const listPath = resolveListPath(location.state, "/surveys");
+  const listPath = "/surveys";
 
-  const surveyQuery = useSurveyDetailQuery(surveyId ?? "");
+  const surveyQuery = useSurveyDetailQuery(surveyKey);
 
   if (isEdit && surveyQuery.isLoading) {
     return (
@@ -220,8 +219,8 @@ export function SurveyEditorPage() {
 
   return (
     <SurveyEditorForm
-      key={surveyId ?? "create"}
-      surveyId={surveyId}
+      key={surveyKey || "create"}
+      surveyId={surveyKey || undefined}
       initialValue={initialValue}
       listPath={listPath}
     />

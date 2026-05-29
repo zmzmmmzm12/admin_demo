@@ -2,20 +2,18 @@ import dayjs from 'dayjs'
 import MDEditor from '@uiw/react-md-editor'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { HeaderListLink } from '../../components/HeaderListLink'
 import { PageHeader } from '../../components/PageHeader'
 import { useAppPreferences } from '../../contexts/AppPreferencesContext'
 import { useNoticeDetailQuery } from '../../hooks/useNoticesQuery'
-import { resolveListPath } from '../../utils/routeState'
 
 export function NoticeDetailPage() {
   const { noticeId } = useParams<{ noticeId: string }>()
   const { theme } = useAppPreferences()
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const location = useLocation()
-  const listPath = resolveListPath(location.state, '/notices')
+  const listPath = '/notices'
 
   const noticeQuery = useNoticeDetailQuery(noticeId ?? '')
   const notice = noticeQuery.data
@@ -72,9 +70,7 @@ export function NoticeDetailPage() {
                 type="button"
                 className="cursor-pointer rounded-md bg-main-color px-3 py-2 text-sm text-white"
                 onClick={() =>
-                  navigate(`/notices/${notice.id}/edit`, {
-                    state: { from: listPath },
-                  })
+                  navigate(`/notices/edit?noticeKey=${notice.id}`)
                 }
               >
                 {t('수정')}

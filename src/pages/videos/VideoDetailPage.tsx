@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { AppCheckbox } from "../../components/AppCheckbox";
 import { HeaderListLink } from "../../components/HeaderListLink";
 import { PageHeader } from "../../components/PageHeader";
@@ -15,7 +15,6 @@ import {
 } from "../../hooks/useVideosQuery";
 import { useDialogActions } from "../../store/dialogStore";
 import type { SubtitlePayload, SubtitleTrack } from "../../types/admin";
-import { resolveListPath } from "../../utils/routeState";
 import { SubtitleEditorModal } from "./components/SubtitleEditorModal";
 
 const PREVIEW_VIDEO_URL =
@@ -205,9 +204,8 @@ function isTimeRangeOverlap(
 export function VideoDetailPage() {
   const { videoId } = useParams<{ videoId: string }>();
   const { t } = useTranslation();
-  const location = useLocation();
   const { openAlert, openConfirm } = useDialogActions();
-  const listPath = resolveListPath(location.state, "/videos");
+  const listPath = "/videos";
 
   const detailQuery = useVideoDetailQuery(videoId ?? "");
   const createSubtitleMutation = useCreateSubtitleMutation();

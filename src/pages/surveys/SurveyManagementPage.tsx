@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppCheckbox } from "../../components/AppCheckbox";
 import { PageHeader } from "../../components/PageHeader";
 import { Pagination } from "../../components/Pagination";
@@ -45,11 +45,25 @@ function parseSurveySearchParams(
 
 function buildSurveySearchParams(params: SurveySearchParams) {
   const next = new URLSearchParams();
+
   next.set("page", String(params.page));
   next.set("pageSize", String(params.pageSize));
   next.set("keyword", params.keyword);
   next.set("status", params.status);
+
   return next;
+}
+
+function areSurveySearchParamsEqual(
+  left: SurveySearchParams,
+  right: SurveySearchParams,
+) {
+  return (
+    left.page === right.page &&
+    left.pageSize === right.pageSize &&
+    left.keyword === right.keyword &&
+    left.status === right.status
+  );
 }
 
 function getSurveyStatusClasses(status: SurveyStatus) {
@@ -67,14 +81,15 @@ function getSurveyStatusClasses(status: SurveyStatus) {
 export function SurveyManagementPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const location = useLocation();
   const { openAlert, openConfirm } = useDialogActions();
 
   const [urlSearchParams, setUrlSearchParams] = useSearchParams();
-  const [params, setParams] = useState<SurveySearchParams>(() =>
-    parseSurveySearchParams(urlSearchParams),
+
+  const params = useMemo(
+    () => parseSurveySearchParams(urlSearchParams),
+    [urlSearchParams],
   );
-  const [draftKeyword, setDraftKeyword] = useState(() => params.keyword);
+
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const surveysQuery = useSurveysQuery(params);
@@ -84,55 +99,41 @@ export function SurveyManagementPage() {
   const list = surveysQuery.data?.data ?? [];
   const totalCount = surveysQuery.data?.totalCount ?? 0;
 
-  const isAllSelected =
-    list.length > 0 && list.every((survey) => selectedIds.includes(survey.id));
-
-  useEffect(() => {
-    const parsed = parseSurveySearchParams(urlSearchParams);
-    const changed =
-      parsed.page !== params.page ||
-      parsed.pageSize !== params.pageSize ||
-      parsed.keyword !== params.keyword ||
-      parsed.status !== params.status;
-
-    if (changed) {
-      setParams(parsed);
-      setDraftKeyword(parsed.keyword);
-    }
-  }, [
-    params.keyword,
-    params.page,
-    params.pageSize,
-    params.status,
-    urlSearchParams,
-  ]);
-
-  useEffect(() => {
-    const current = urlSearchParams.toString();
-    const next = buildSurveySearchParams(params).toString();
-    if (current !== next) {
-      setUrlSearchParams(buildSurveySearchParams(params), { replace: true });
-    }
-  }, [params, setUrlSearchParams, urlSearchParams]);
-
-  useEffect(() => {
-    const visibleIds = new Set(list.map((survey) => survey.id));
-    setSelectedIds((prev) => prev.filter((id) => visibleIds.has(id)));
+  const visibleSurveyIds = useMemo(() => {
+    return new Set(list.map((survey) => survey.id));
   }, [list]);
 
   const validSelectedIds = useMemo(() => {
-    const visibleIds = new Set(list.map((survey) => survey.id));
-    return selectedIds.filter((id) => visibleIds.has(id));
-  }, [list, selectedIds]);
+    return selectedIds.filter((id) => visibleSurveyIds.has(id));
+  }, [selectedIds, visibleSurveyIds]);
+
+  const isAllSelected =
+    list.length > 0 &&
+    list.every((survey) => validSelectedIds.includes(survey.id));
+
+  const updateSearchParams = (nextParams: SurveySearchParams) => {
+    if (areSurveySearchParamsEqual(params, nextParams)) {
+      return;
+    }
+
+    setUrlSearchParams(buildSurveySearchParams(nextParams), { replace: true });
+  };
 
   const onSubmitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setParams((prev) => ({ ...prev, page: 1, keyword: draftKeyword.trim() }));
+
+    const formData = new FormData(event.currentTarget);
+    const keyword = String(formData.get("keyword") ?? "").trim();
+
+    updateSearchParams({
+      ...params,
+      page: 1,
+      keyword,
+    });
   };
 
   const onResetFilters = () => {
-    setDraftKeyword("");
-    setParams(DEFAULT_SURVEY_PARAMS);
+    updateSearchParams(DEFAULT_SURVEY_PARAMS);
   };
 
   return (
@@ -155,11 +156,11 @@ export function SurveyManagementPage() {
                 value={params.status}
                 className="h-9 cursor-pointer appearance-none rounded-md border border-slate-200 bg-white px-3 pr-8 text-sm text-slate-600 dark:border-dark-border dark:bg-dark-surface-alt dark:text-slate-100"
                 onChange={(event) =>
-                  setParams((prev) => ({
-                    ...prev,
+                  updateSearchParams({
+                    ...params,
                     page: 1,
                     status: event.target.value as SurveySearchParams["status"],
-                  }))
+                  })
                 }
               >
                 <option value="all">{t("전체 상태")}</option>
@@ -173,8 +174,9 @@ export function SurveyManagementPage() {
             </div>
 
             <input
-              value={draftKeyword}
-              onChange={(event) => setDraftKeyword(event.target.value)}
+              key={params.keyword}
+              name="keyword"
+              defaultValue={params.keyword}
               placeholder={t("설문명 검색")}
               className="h-9 w-[240px] rounded-md border border-slate-200 px-3 text-sm text-slate-700 dark:border-dark-border dark:bg-dark-surface-alt dark:text-slate-100"
             />
@@ -218,11 +220,7 @@ export function SurveyManagementPage() {
             <button
               type="button"
               className="cursor-pointer rounded-md bg-main-color px-3 py-2 text-sm text-white"
-              onClick={() =>
-                navigate("/surveys/new", {
-                  state: { from: `${location.pathname}${location.search}` },
-                })
-              }
+              onClick={() => navigate("/surveys/edit")}
             >
               {t("설문 등록")}
             </button>
@@ -419,11 +417,7 @@ export function SurveyManagementPage() {
                         type="button"
                         className="group relative flex size-7 cursor-pointer items-center justify-center rounded-md bg-indigo-500 text-slate-50"
                         onClick={() =>
-                          navigate(`/surveys/${survey.id}/edit`, {
-                            state: {
-                              from: `${location.pathname}${location.search}`,
-                            },
-                          })
+                          navigate(`/surveys/edit?surveyKey=${survey.id}`)
                         }
                       >
                         <span className="material-symbols-outlined text-lg">
@@ -441,7 +435,12 @@ export function SurveyManagementPage() {
                         onClick={() =>
                           openConfirm(t("해당 설문을 삭제하시겠습니까?"), () =>
                             deleteSurveyMutation.mutate(survey.id, {
-                              onSuccess: () => openAlert(t("처리되었습니다.")),
+                              onSuccess: () => {
+                                setSelectedIds((prev) =>
+                                  prev.filter((id) => id !== survey.id),
+                                );
+                                openAlert(t("처리되었습니다."));
+                              },
                               onError: () =>
                                 openAlert(t("처리 중 오류가 발생했습니다.")),
                             }),
@@ -468,7 +467,7 @@ export function SurveyManagementPage() {
             curr={params.page}
             limit={params.pageSize}
             movePage={(nextPage: number) =>
-              setParams((prev) => ({ ...prev, page: nextPage }))
+              updateSearchParams({ ...params, page: nextPage })
             }
           />
         </div>
