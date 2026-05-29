@@ -610,7 +610,12 @@ function SurveyEditorForm({
                           />
                           <button
                             type="button"
-                            className="inline-flex size-7 cursor-pointer items-center justify-center rounded-md bg-slate-500 text-white"
+                            disabled={question.options.length <= 2}
+                            className={`inline-flex size-7 items-center justify-center rounded-md ${
+                              question.options.length <= 2
+                                ? "cursor-default bg-slate-200 text-slate-400 dark:bg-slate-700 dark:text-slate-500"
+                                : "cursor-pointer bg-slate-500 text-white dark:bg-slate-500"
+                            }`}
                             onClick={() =>
                               onDeleteOption(questionIndex, optionIndex)
                             }
