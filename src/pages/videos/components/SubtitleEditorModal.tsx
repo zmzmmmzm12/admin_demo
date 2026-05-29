@@ -69,23 +69,25 @@ export function SubtitleEditorModal({
 
   return (
     <AppModal open={open} onClose={onClose} zIndex={95}>
-      <div className="mx-auto max-h-[92vh] w-[1200px] max-w-[calc(100vw-20px)] overflow-hidden rounded-md bg-white shadow-xl dark:bg-dark-surface">
-        <div className="flex items-center border-b border-slate-200 px-5 py-3 dark:border-dark-border">
-          <strong className="text-base text-slate-700 dark:text-slate-100">
-            {title}
-          </strong>
-          <button
-            type="button"
-            className="ml-auto inline-flex size-7 cursor-pointer items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-dark-hover"
-            onClick={onClose}
-          >
-            <span className="material-symbols-outlined text-lg">close</span>
-          </button>
+      <div className="relative flex max-h-[calc(100dvh-20px)] w-[1400px] max-w-[calc(100vw-20px)] flex-col overflow-hidden rounded-md bg-white shadow-lg dark:bg-dark-surface">
+        <div className="shrink-0 border-b border-slate-200 px-1 text-base font-semibold text-slate-700 dark:border-dark-border dark:text-slate-100">
+          <div className="flex items-center justify-between">
+            <div className="px-3 py-3">{title}</div>
+            <button
+              type="button"
+              className="flex size-10 cursor-pointer items-center justify-center text-slate-500 dark:text-slate-300"
+              onClick={onClose}
+              aria-label="close"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+          </div>
         </div>
 
-        <div className="scroll-custom-container max-h-[calc(92vh-58px)] overflow-y-auto p-5">
-          <div className="grid gap-5 xl:grid-cols-[1.15fr_1fr]">
-            <div>
+        <div className="scroll-custom-container min-h-0 flex-1 overflow-y-auto p-5">
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-4">
+            <div className="xl:col-span-3 flex">
+              <div className="my-auto w-full">
               <div className="mb-2 text-sm font-semibold text-slate-600 dark:text-slate-200">
                 {t("미리보기")}
               </div>
@@ -107,8 +109,9 @@ export function SubtitleEditorModal({
                 )}
               </div>
             </div>
+            </div>
 
-            <div className="space-y-3">
+            <div className="xl:col-span-1 flex flex-col gap-3 rounded-md border border-slate-200 p-3 dark:border-dark-border">
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <div>
                   <div className="mb-1 text-xs text-slate-500 dark:text-slate-300">
@@ -197,7 +200,7 @@ export function SubtitleEditorModal({
               {liveTimeError && <p className="text-xs text-rose-500">{liveTimeError}</p>}
 
               {draftItems.length > 0 && (
-                <div className="max-h-56 overflow-y-auto rounded-md border border-slate-200 dark:border-dark-border">
+                <div className="scroll-custom-container max-h-56 overflow-y-auto rounded-md border border-slate-200 dark:border-dark-border">
                   <table className="w-full text-xs">
                     <colgroup>
                       <col className="w-[56px]" />

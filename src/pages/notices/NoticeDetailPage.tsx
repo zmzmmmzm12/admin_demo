@@ -2,16 +2,20 @@ import dayjs from 'dayjs'
 import MDEditor from '@uiw/react-md-editor'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { HeaderListLink } from '../../components/HeaderListLink'
 import { PageHeader } from '../../components/PageHeader'
 import { useAppPreferences } from '../../contexts/AppPreferencesContext'
 import { useNoticeDetailQuery } from '../../hooks/useNoticesQuery'
+import { resolveListPath } from '../../utils/routeState'
 
 export function NoticeDetailPage() {
   const { noticeId } = useParams<{ noticeId: string }>()
   const { theme } = useAppPreferences()
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
+  const listPath = resolveListPath(location.state, '/notices')
 
   const noticeQuery = useNoticeDetailQuery(noticeId ?? '')
   const notice = noticeQuery.data
@@ -21,9 +25,13 @@ export function NoticeDetailPage() {
     return null
   }
 
-  return (
+    return (
     <section>
-      <PageHeader title={headerTitle} description={t('공지사항 내용 확인 및 수정')} />
+      <PageHeader
+        title={headerTitle}
+        description={t('공지사항 내용 확인 및 수정')}
+        titleAction={<HeaderListLink to={listPath} />}
+      />
       <div className="mx-3 rounded-md bg-white p-5 shadow-md dark:bg-dark-surface">
         {noticeQuery.isLoading && (
           <div className="space-y-4 animate-pulse">
@@ -63,12 +71,16 @@ export function NoticeDetailPage() {
               <button
                 type="button"
                 className="cursor-pointer rounded-md bg-main-color px-3 py-2 text-sm text-white"
-                onClick={() => navigate(`/notices/${notice.id}/edit`)}
+                onClick={() =>
+                  navigate(`/notices/${notice.id}/edit`, {
+                    state: { from: listPath },
+                  })
+                }
               >
                 {t('수정')}
               </button>
               <Link
-                to="/notices"
+                to={listPath}
                 className="cursor-pointer rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 dark:border-dark-border dark:text-slate-200"
               >
                 {t('목록으로')}

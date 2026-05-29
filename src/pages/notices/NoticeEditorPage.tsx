@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { HeaderListLink } from "../../components/HeaderListLink";
 import { MarkdownEditor } from "../../components/MarkdownEditor";
 import { PageHeader } from "../../components/PageHeader";
 import { useAppPreferences } from "../../contexts/AppPreferencesContext";
@@ -10,6 +11,7 @@ import {
 } from "../../hooks/useNoticesQuery";
 import { useDialogActions } from "../../store/dialogStore";
 import type { NoticeStatus } from "../../types/admin";
+import { resolveListPath } from "../../utils/routeState";
 
 interface NoticeEditorFormValue {
   title: string;
@@ -29,6 +31,8 @@ export function NoticeEditorPage() {
   const { noticeId } = useParams<{ noticeId?: string }>();
   const isEdit = Boolean(noticeId);
   const { t } = useTranslation();
+  const location = useLocation();
+  const listPath = resolveListPath(location.state, "/notices");
 
   const noticeQuery = useNoticeDetailQuery(noticeId ?? "");
 
@@ -38,6 +42,7 @@ export function NoticeEditorPage() {
         <PageHeader
           title={t("공지사항 수정")}
           description={t("에디터를 통해 공지사항 내용을 작성합니다.")}
+          titleAction={<HeaderListLink to={listPath} />}
         />
 
         <div className="mx-3 mb-8 rounded-md bg-white shadow-md dark:bg-dark-surface">
@@ -78,6 +83,7 @@ export function NoticeEditorPage() {
         <PageHeader
           title={t("공지사항 수정")}
           description={t("에디터를 통해 공지사항 내용을 작성합니다.")}
+          titleAction={<HeaderListLink to={listPath} />}
         />
 
         <div className="mx-3 mb-8 rounded-md bg-white shadow-md dark:bg-dark-surface">
@@ -112,6 +118,7 @@ export function NoticeEditorPage() {
       key={noticeId ?? "create"}
       noticeId={noticeId}
       initialValue={initialValue}
+      listPath={listPath}
     />
   );
 }
@@ -119,9 +126,14 @@ export function NoticeEditorPage() {
 interface NoticeEditorFormProps {
   noticeId?: string;
   initialValue: NoticeEditorFormValue;
+  listPath: string;
 }
 
-function NoticeEditorForm({ noticeId, initialValue }: NoticeEditorFormProps) {
+function NoticeEditorForm({
+  noticeId,
+  initialValue,
+  listPath,
+}: NoticeEditorFormProps) {
   const isEdit = Boolean(noticeId);
   const { theme } = useAppPreferences();
   const { t } = useTranslation();
@@ -162,7 +174,7 @@ function NoticeEditorForm({ noticeId, initialValue }: NoticeEditorFormProps) {
         {
           onSuccess: () => {
             openAlert(t("처리되었습니다."));
-            navigate("/notices");
+            navigate(listPath);
           },
           onError: () => {
             openAlert(t("처리 중 오류가 발생했습니다."));
@@ -177,6 +189,7 @@ function NoticeEditorForm({ noticeId, initialValue }: NoticeEditorFormProps) {
       <PageHeader
         title={isEdit ? t("공지사항 수정") : t("공지사항 등록")}
         description={t("에디터를 통해 공지사항 내용을 작성합니다.")}
+        titleAction={<HeaderListLink to={listPath} />}
       />
 
       <div className="mx-3 mb-8 rounded-md bg-white shadow-md dark:bg-dark-surface">
@@ -258,7 +271,7 @@ function NoticeEditorForm({ noticeId, initialValue }: NoticeEditorFormProps) {
             <button
               type="button"
               className="cursor-pointer rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 dark:border-dark-border dark:text-slate-200"
-              onClick={() => navigate("/notices")}
+              onClick={() => navigate(listPath)}
             >
               {t("취소")}
             </button>

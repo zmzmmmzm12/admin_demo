@@ -1,8 +1,9 @@
 import dayjs from "dayjs";
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { AppCheckbox } from "../../components/AppCheckbox";
+import { HeaderListLink } from "../../components/HeaderListLink";
 import { PageHeader } from "../../components/PageHeader";
 import { TableContainer } from "../../components/TableContainer";
 import {
@@ -14,6 +15,7 @@ import {
 } from "../../hooks/useVideosQuery";
 import { useDialogActions } from "../../store/dialogStore";
 import type { SubtitlePayload, SubtitleTrack } from "../../types/admin";
+import { resolveListPath } from "../../utils/routeState";
 import { SubtitleEditorModal } from "./components/SubtitleEditorModal";
 
 const PREVIEW_VIDEO_URL =
@@ -203,7 +205,9 @@ function isTimeRangeOverlap(
 export function VideoDetailPage() {
   const { videoId } = useParams<{ videoId: string }>();
   const { t } = useTranslation();
+  const location = useLocation();
   const { openAlert, openConfirm } = useDialogActions();
+  const listPath = resolveListPath(location.state, "/videos");
 
   const detailQuery = useVideoDetailQuery(videoId ?? "");
   const createSubtitleMutation = useCreateSubtitleMutation();
@@ -730,6 +734,7 @@ export function VideoDetailPage() {
       <PageHeader
         title={t("자막 관리")}
         description={t("언어별 자막을 등록하고 관리합니다.")}
+        titleAction={<HeaderListLink to={listPath} />}
       />
 
       <div className="mx-3 space-y-4 pb-8">

@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { AppCheckbox } from "../../components/AppCheckbox";
 import { PageHeader } from "../../components/PageHeader";
 import { Pagination } from "../../components/Pagination";
@@ -109,6 +109,7 @@ function areUserSearchParamsEqual(
 
 export function UserListPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [urlSearchParams, setUrlSearchParams] = useSearchParams();
 
   const urlParams = useMemo(
@@ -422,6 +423,7 @@ export function UserListPage() {
                   <div className="text-center text-sm text-slate-700 whitespace-nowrap dark:text-white">
                     <Link
                       to={`/users/${user.id}`}
+                      state={{ from: `${location.pathname}${location.search}` }}
                       className="cursor-pointer text-slate-700 dark:text-white"
                     >
                       {user.name}
@@ -500,7 +502,13 @@ export function UserListPage() {
                             <button
                               type="button"
                               className="group relative flex size-7 cursor-pointer items-center justify-center rounded-md bg-indigo-500 text-slate-50"
-                              onClick={() => navigate(`/users/${user.id}`)}
+                              onClick={() =>
+                                navigate(`/users/${user.id}`, {
+                                  state: {
+                                    from: `${location.pathname}${location.search}`,
+                                  },
+                                })
+                              }
                             >
                               <span className="material-symbols-outlined text-lg">
                                 edit

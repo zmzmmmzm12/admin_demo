@@ -22,25 +22,28 @@ export function VideoInfoModal({
 
   return (
     <AppModal open={Boolean(videoId)} onClose={onClose} zIndex={95}>
-      <div className="mx-auto max-h-[92vh] w-[1200px] max-w-[calc(100vw-20px)] overflow-hidden rounded-md bg-white shadow-xl dark:bg-dark-surface">
-        <div className="flex items-center border-b border-slate-200 px-5 py-3 dark:border-dark-border">
-          <strong className="text-base text-slate-700 dark:text-slate-100">
-            {t("영상 정보")}
-          </strong>
-          <button
-            type="button"
-            className="ml-auto inline-flex size-7 cursor-pointer items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-dark-hover"
-            onClick={onClose}
-          >
-            <span className="material-symbols-outlined text-lg">close</span>
-          </button>
+      <div className="relative flex max-h-[calc(100dvh-20px)] w-[1400px] max-w-[calc(100vw-20px)] flex-col overflow-hidden rounded-md bg-white shadow-lg dark:bg-dark-surface">
+        <div className="shrink-0 border-b border-slate-200 px-1 text-base font-semibold text-slate-700 dark:border-dark-border dark:text-slate-100">
+          <div className="flex items-center justify-between">
+            <div className="px-3 py-3">{t("영상 정보")}</div>
+            <button
+              type="button"
+              className="flex size-10 cursor-pointer items-center justify-center text-slate-500 dark:text-slate-300"
+              onClick={onClose}
+              aria-label="close"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+          </div>
         </div>
 
-        <div className="scroll-custom-container max-h-[calc(92vh-58px)] overflow-y-auto p-5">
+        <div className="scroll-custom-container min-h-0 flex-1 overflow-y-auto p-5">
           {infoVideoQuery.isLoading && (
-            <div className="grid animate-pulse gap-4 lg:grid-cols-[380px_1fr]">
-              <div className="h-[214px] w-full rounded-md bg-slate-100 dark:bg-slate-700/70" />
-              <div className="space-y-3">
+            <div className="grid animate-pulse gap-5 xl:grid-cols-4">
+              <div className="xl:col-span-3">
+                <div className="aspect-video w-full rounded-md bg-slate-100 dark:bg-slate-700/70" />
+              </div>
+              <div className="space-y-3 rounded-md border border-slate-200 p-3 dark:border-dark-border">
                 <div className="h-6 w-2/3 rounded bg-slate-100 dark:bg-slate-700/70" />
                 <div className="h-4 w-5/6 rounded bg-slate-100 dark:bg-slate-700/70" />
                 <div className="h-4 w-4/6 rounded bg-slate-100 dark:bg-slate-700/70" />
@@ -55,18 +58,20 @@ export function VideoInfoModal({
           )}
 
           {!infoVideoQuery.isLoading && !infoVideoQuery.isError && infoVideoQuery.data && (
-            <div className="grid gap-4 lg:grid-cols-[540px_1fr]">
-              <div className="overflow-hidden rounded-md bg-black">
-                <video
-                  controls
-                  autoPlay
-                  className="aspect-video w-full object-cover"
-                  poster={infoVideoQuery.data.thumbnailUrl}
-                  src={PREVIEW_VIDEO_URL}
-                />
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-4">
+              <div className="xl:col-span-3 flex">
+                <div className="relative my-auto aspect-video w-full overflow-hidden rounded-md bg-black">
+                  <video
+                    controls
+                    autoPlay
+                    className="h-full w-full rounded-md bg-black object-cover"
+                    poster={infoVideoQuery.data.thumbnailUrl}
+                    src={PREVIEW_VIDEO_URL}
+                  />
+                </div>
               </div>
 
-              <div>
+              <div className="xl:col-span-1 flex flex-col gap-2 rounded-md border border-slate-200 p-3 dark:border-dark-border">
                 <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
                   {infoVideoQuery.data.title}
                 </h3>
@@ -75,7 +80,7 @@ export function VideoInfoModal({
                   {infoVideoQuery.data.description}
                 </p>
 
-                <div className="mt-4 grid grid-cols-1 gap-2 rounded-md bg-slate-50 p-3 text-sm text-slate-600 dark:bg-dark-surface-alt dark:text-slate-200">
+                <div className="mt-1 grid grid-cols-1 gap-2 text-sm text-slate-600 dark:text-slate-200">
                   <div>
                     <b className="mr-1">{t("상태")}:</b>
                     <span>

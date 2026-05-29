@@ -3,8 +3,9 @@ import { useMemo, useState } from "react";
 import DatePickerModule from "react-multi-date-picker";
 import DateObject from "react-date-object";
 import { useTranslation } from "react-i18next";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { AppCheckbox } from "../../components/AppCheckbox";
+import { HeaderListLink } from "../../components/HeaderListLink";
 import { PageHeader } from "../../components/PageHeader";
 import {
   useSaveSurveyMutation,
@@ -18,6 +19,7 @@ import type {
   SurveyStatus,
 } from "../../types/admin";
 import { getDatePickerLocale } from "../../utils/datePickerLocale";
+import { resolveListPath } from "../../utils/routeState";
 
 const DatePicker =
   (DatePickerModule as unknown as { default?: typeof DatePickerModule })
@@ -139,6 +141,8 @@ export function SurveyEditorPage() {
   const { surveyId } = useParams<{ surveyId?: string }>();
   const isEdit = Boolean(surveyId);
   const { t } = useTranslation();
+  const location = useLocation();
+  const listPath = resolveListPath(location.state, "/surveys");
 
   const surveyQuery = useSurveyDetailQuery(surveyId ?? "");
 
@@ -148,6 +152,7 @@ export function SurveyEditorPage() {
         <PageHeader
           title={t("설문 수정")}
           description={t("설문 정보와 문항을 편집합니다.")}
+          titleAction={<HeaderListLink to={listPath} />}
         />
 
         <div className="mx-3 mb-8 rounded-md bg-white shadow-md dark:bg-dark-surface">
@@ -172,6 +177,7 @@ export function SurveyEditorPage() {
         <PageHeader
           title={t("설문 수정")}
           description={t("설문 정보와 문항을 편집합니다.")}
+          titleAction={<HeaderListLink to={listPath} />}
         />
 
         <div className="mx-3 mb-8 rounded-md bg-white shadow-md dark:bg-dark-surface">
@@ -217,6 +223,7 @@ export function SurveyEditorPage() {
       key={surveyId ?? "create"}
       surveyId={surveyId}
       initialValue={initialValue}
+      listPath={listPath}
     />
   );
 }
@@ -224,9 +231,14 @@ export function SurveyEditorPage() {
 interface SurveyEditorFormProps {
   surveyId?: string;
   initialValue: SurveyEditorFormValue;
+  listPath: string;
 }
 
-function SurveyEditorForm({ surveyId, initialValue }: SurveyEditorFormProps) {
+function SurveyEditorForm({
+  surveyId,
+  initialValue,
+  listPath,
+}: SurveyEditorFormProps) {
   const isEdit = Boolean(surveyId);
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -393,7 +405,7 @@ function SurveyEditorForm({ surveyId, initialValue }: SurveyEditorFormProps) {
         {
           onSuccess: () => {
             openAlert(t("처리되었습니다."));
-            navigate("/surveys");
+            navigate(listPath);
           },
           onError: () => openAlert(t("처리 중 오류가 발생했습니다.")),
         },
@@ -406,6 +418,7 @@ function SurveyEditorForm({ surveyId, initialValue }: SurveyEditorFormProps) {
       <PageHeader
         title={isEdit ? t("설문 수정") : t("설문 등록")}
         description={t("설문 정보와 문항을 편집합니다.")}
+        titleAction={<HeaderListLink to={listPath} />}
       />
 
       <div className="mx-3 mb-8 rounded-md bg-white shadow-md dark:bg-dark-surface">
@@ -704,7 +717,7 @@ function SurveyEditorForm({ surveyId, initialValue }: SurveyEditorFormProps) {
             <button
               type="button"
               className="cursor-pointer rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 dark:border-dark-border dark:text-slate-200"
-              onClick={() => navigate("/surveys")}
+              onClick={() => navigate(listPath)}
             >
               {t("취소")}
             </button>

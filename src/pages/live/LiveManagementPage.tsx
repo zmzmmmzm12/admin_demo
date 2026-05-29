@@ -136,12 +136,17 @@ export function LiveManagementPage() {
       <div className="mx-3 space-y-4 pb-8">
         <div className="rounded-md bg-white p-4 shadow-md dark:bg-dark-surface">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <form className="flex flex-wrap items-center gap-2" onSubmit={onSubmitSearch}>
+            <form
+              className="flex flex-wrap items-center gap-2"
+              onSubmit={onSubmitSearch}
+            >
               <div className="relative">
                 <select
                   value={status}
                   className="h-9 cursor-pointer appearance-none rounded-md border border-slate-200 bg-white px-3 pr-8 text-sm text-slate-600 dark:border-dark-border dark:bg-dark-surface-alt dark:text-slate-100"
-                  onChange={(event) => setStatus(event.target.value as "all" | LiveStatus)}
+                  onChange={(event) =>
+                    setStatus(event.target.value as "all" | LiveStatus)
+                  }
                 >
                   <option value="all">{t("전체 상태")}</option>
                   <option value="online">{t("온라인")}</option>
@@ -184,7 +189,7 @@ export function LiveManagementPage() {
                 className="cursor-pointer rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 dark:border-dark-border dark:bg-dark-surface-alt dark:text-slate-100"
                 onClick={onResetFilters}
               >
-                {t("필터 초기화")}
+                {t("초기화")}
               </button>
             </form>
           </div>

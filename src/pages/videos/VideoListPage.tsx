@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { type FormEvent, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { AppCheckbox } from "../../components/AppCheckbox";
 import { PageHeader } from "../../components/PageHeader";
 import { Pagination } from "../../components/Pagination";
@@ -74,6 +74,7 @@ function areVideoSearchParamsEqual(
 export function VideoListPage() {
   const { locale } = useAppPreferences();
   const { t } = useTranslation();
+  const location = useLocation();
   const [urlSearchParams, setUrlSearchParams] = useSearchParams();
   const { openAlert, openConfirm } = useDialogActions();
 
@@ -453,6 +454,7 @@ export function VideoListPage() {
                       <div className="flex w-full flex-nowrap items-center justify-end gap-1 whitespace-nowrap">
                         <Link
                           to={`/videos/${video.id}`}
+                          state={{ from: `${location.pathname}${location.search}` }}
                           className="group relative flex size-7 cursor-pointer items-center justify-center rounded-md bg-blue-500 text-slate-50"
                         >
                           <span className="material-symbols-outlined text-base">

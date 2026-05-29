@@ -20,21 +20,22 @@ export function NoticePreviewModal({
 
   return (
     <AppModal open={Boolean(noticeId)} onClose={onClose} zIndex={95}>
-      <div className="mx-auto max-h-[85vh] w-[760px] overflow-hidden rounded-md bg-white shadow-xl dark:bg-dark-surface">
-        <div className="flex items-center border-b border-slate-200 px-5 py-3 dark:border-dark-border">
-          <strong className="text-base text-slate-700 dark:text-slate-100">
-            {previewQuery.data?.title ?? "-"}
-          </strong>
-          <button
-            type="button"
-            className="ml-auto inline-flex size-7 cursor-pointer items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-dark-hover"
-            onClick={onClose}
-          >
-            <span className="material-symbols-outlined text-lg">close</span>
-          </button>
+      <div className="relative flex max-h-[calc(100dvh-24px)] w-[920px] max-w-[calc(100vw-20px)] flex-col overflow-hidden rounded-md bg-white shadow-lg dark:bg-dark-surface">
+        <div className="shrink-0 border-b border-slate-200 px-1 text-base font-semibold text-slate-700 dark:border-dark-border dark:text-slate-100">
+          <div className="flex items-center justify-between">
+            <div className="px-3 py-3">{previewQuery.data?.title ?? "-"}</div>
+            <button
+              type="button"
+              className="flex size-10 cursor-pointer items-center justify-center text-slate-500 dark:text-slate-300"
+              onClick={onClose}
+              aria-label="close"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+          </div>
         </div>
 
-        <div className="max-h-[calc(85vh-56px)] overflow-y-auto p-5">
+        <div className="scroll-custom-container min-h-0 flex-1 overflow-y-auto p-5">
           {previewQuery.isLoading && (
             <div className="space-y-4 py-2">
               <div className="h-6 w-2/3 animate-pulse rounded bg-slate-100 dark:bg-slate-700/70" />
@@ -68,7 +69,8 @@ export function NoticePreviewModal({
                     : t("임시저장")}
                 </span>
                 <span className="ml-auto text-xs text-slate-400">
-                  {previewQuery.data.author} · {dayjs(previewQuery.data.updatedAt).format("YYYY.MM.DD HH:mm")}
+                  {previewQuery.data.author} ·{" "}
+                  {dayjs(previewQuery.data.updatedAt).format("YYYY.MM.DD HH:mm")}
                 </span>
               </div>
 
