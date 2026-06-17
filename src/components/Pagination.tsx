@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+
+const PAGE_GROUP_SIZE = 5;
 
 interface PaginationProps {
   total: number;
@@ -9,65 +11,52 @@ interface PaginationProps {
 
 export function Pagination({ total, curr, limit, movePage }: PaginationProps) {
   const totalPages = useMemo(
-    () => Math.floor(total / limit) + (total % limit !== 0 ? 1 : 0),
+    () => (limit > 0 ? Math.ceil(total / limit) : 0),
     [limit, total],
   );
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [maxPage, setMaxPage] = useState(5);
+  const currentPage = curr;
+  const maxPage =
+    currentPage === 0
+      ? PAGE_GROUP_SIZE
+      : currentPage % PAGE_GROUP_SIZE === 0
+        ? currentPage
+        : Math.floor(currentPage / PAGE_GROUP_SIZE) * PAGE_GROUP_SIZE +
+          PAGE_GROUP_SIZE;
 
   const onPage = (nextPage: number) => {
-    setCurrentPage(nextPage);
-    setMaxPage(
-      nextPage === 0
-        ? 5
-        : nextPage % 5 === 0
-          ? nextPage
-          : Math.floor(nextPage / 5) * 5 + 5,
-    );
-
     if (curr !== nextPage) {
       movePage(nextPage);
     }
   };
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    onPage(curr);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [curr]);
-
   const onPrev = () => {
-    if (totalPages === 0 || maxPage === 5) return;
-    const nextPage = maxPage - 9;
-    setCurrentPage(nextPage);
-    setMaxPage(maxPage - 5);
+    if (totalPages === 0 || maxPage === PAGE_GROUP_SIZE) return;
+    const nextPage = maxPage - PAGE_GROUP_SIZE * 2 + 1;
     onPage(nextPage);
   };
 
   const onNext = () => {
     if (totalPages === 0 || maxPage >= totalPages) return;
     onPage(maxPage + 1);
-    setMaxPage(maxPage + 5);
   };
 
   const onFirst = () => {
-    if (totalPages === 0 || maxPage === 5) return;
-    setCurrentPage(1);
-    setMaxPage(5);
+    if (totalPages === 0 || maxPage === PAGE_GROUP_SIZE) return;
     onPage(1);
   };
 
   const onLast = () => {
     if (totalPages === 0 || maxPage >= totalPages) return;
-    setMaxPage(totalPages);
     onPage(totalPages);
   };
 
+  const pageGroupStart = Math.max(maxPage - PAGE_GROUP_SIZE + 1, 1);
+  const pageGroupEnd = Math.min(maxPage, totalPages);
   const pages = Array.from(
-    { length: totalPages },
-    (_, index) => index + 1,
-  ).filter((item) => !(maxPage - item < 0 || maxPage - item >= 5));
+    { length: Math.max(pageGroupEnd - pageGroupStart + 1, 0) },
+    (_, index) => pageGroupStart + index,
+  );
 
   return (
     <div className="flex items-center justify-center gap-1 p-5 pb-8">
@@ -79,8 +68,9 @@ export function Pagination({ total, curr, limit, movePage }: PaginationProps) {
       <button
         type="button"
         className="flex size-7 cursor-pointer items-center justify-center rounded-md border border-gray-400 text-gray-400 disabled:cursor-not-allowed disabled:opacity-25"
-        disabled={totalPages === 0 || maxPage === 5}
+        disabled={totalPages === 0 || maxPage === PAGE_GROUP_SIZE}
         onClick={onFirst}
+        aria-label="first page"
       >
         <span className="material-symbols-outlined text-xl">first_page</span>
       </button>
@@ -88,14 +78,18 @@ export function Pagination({ total, curr, limit, movePage }: PaginationProps) {
       <button
         type="button"
         className="flex size-7 cursor-pointer items-center justify-center rounded-md border border-gray-400 text-gray-400 disabled:cursor-not-allowed disabled:opacity-25"
-        disabled={totalPages === 0 || maxPage === 5}
+        disabled={totalPages === 0 || maxPage === PAGE_GROUP_SIZE}
         onClick={onPrev}
+        aria-label="previous page group"
       >
         <span className="material-symbols-outlined text-xl">chevron_left</span>
       </button>
 
       {pages.length === 0 ? (
-        <div className="flex h-7 min-w-[1.75rem] cursor-default items-center justify-center rounded-md border border-indigo-500 px-2 text-sm tabular-nums text-indigo-500 dark:border-indigo-400 dark:text-indigo-300">
+        <div
+          className="flex h-7 min-w-[1.75rem] cursor-default items-center justify-center rounded-md border border-indigo-500 px-2 text-sm tabular-nums text-indigo-500 dark:border-indigo-400 dark:text-indigo-300"
+          aria-current="page"
+        >
           {currentPage}
         </div>
       ) : (
@@ -109,6 +103,8 @@ export function Pagination({ total, curr, limit, movePage }: PaginationProps) {
                 : "border-gray-400 text-gray-400 dark:border-slate-500 dark:text-slate-400"
             }`}
             disabled={currentPage === page}
+            aria-current={currentPage === page ? "page" : undefined}
+            aria-label={`page ${page}`}
             onClick={() => onPage(page)}
           >
             {page}
@@ -121,6 +117,7 @@ export function Pagination({ total, curr, limit, movePage }: PaginationProps) {
         className="flex size-7 cursor-pointer items-center justify-center rounded-md border border-gray-400 text-gray-400 disabled:cursor-not-allowed disabled:opacity-25"
         disabled={totalPages === 0 || maxPage >= totalPages}
         onClick={onNext}
+        aria-label="next page group"
       >
         <span className="material-symbols-outlined text-xl">chevron_right</span>
       </button>
@@ -130,6 +127,7 @@ export function Pagination({ total, curr, limit, movePage }: PaginationProps) {
         className="flex size-7 cursor-pointer items-center justify-center rounded-md border border-gray-400 text-gray-400 disabled:cursor-not-allowed disabled:opacity-25"
         disabled={totalPages === 0 || maxPage >= totalPages}
         onClick={onLast}
+        aria-label="last page"
       >
         <span className="material-symbols-outlined text-xl">last_page</span>
       </button>
