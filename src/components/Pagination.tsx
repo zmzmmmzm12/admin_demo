@@ -1,5 +1,3 @@
-import { useMemo } from "react";
-
 const PAGE_GROUP_SIZE = 5;
 
 interface PaginationProps {
@@ -10,10 +8,7 @@ interface PaginationProps {
 }
 
 export function Pagination({ total, curr, limit, movePage }: PaginationProps) {
-  const totalPages = useMemo(
-    () => (limit > 0 ? Math.ceil(total / limit) : 0),
-    [limit, total],
-  );
+  const totalPages = limit > 0 ? Math.ceil(total / limit) : 0;
 
   const currentPage = curr;
   const maxPage =
