@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm, type SubmitErrorHandler } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { z } from "zod";
 import { HeaderListLink } from "../../components/HeaderListLink";
 import { MarkdownEditor } from "../../components/MarkdownEditor";
 import { PageHeader } from "../../components/PageHeader";
@@ -18,6 +20,13 @@ interface NoticeEditorFormValue {
   status: NoticeStatus;
   content: string;
 }
+
+const noticeEditorSchema = z.object({
+  title: z.string().refine((value) => value.trim().length > 0),
+  category: z.string().refine((value) => value.trim().length > 0),
+  status: z.enum(["draft", "published"]),
+  content: z.string().refine((value) => value.trim().length > 0),
+}) satisfies z.ZodType<NoticeEditorFormValue>;
 
 const defaultNoticeFormValue: NoticeEditorFormValue = {
   title: "",
@@ -141,33 +150,28 @@ function NoticeEditorForm({
 
   const saveMutation = useSaveNoticeMutation();
 
-  const [title, setTitle] = useState(initialValue.title);
-  const [category, setCategory] = useState(initialValue.category);
-  const [status, setStatus] = useState<NoticeStatus>(initialValue.status);
-  const [content, setContent] = useState(initialValue.content);
-  const [attempted, setAttempted] = useState(false);
+  const {
+    control,
+    handleSubmit,
+    register,
+    formState: { errors },
+  } = useForm<NoticeEditorFormValue>({
+    defaultValues: initialValue,
+    resolver: zodResolver(noticeEditorSchema),
+    mode: "onSubmit",
+    reValidateMode: "onChange",
+  });
 
-  const titleError = attempted && !title.trim();
-  const categoryError = attempted && !category.trim();
-  const contentError = attempted && !content.trim();
-
-  const onSave = () => {
-    setAttempted(true);
-
-    if (!title.trim() || !category.trim() || !content.trim()) {
-      openAlert(t("제목, 카테고리, 내용을 모두 입력해주세요."));
-      return;
-    }
-
+  const onValidSubmit = (values: NoticeEditorFormValue) => {
     openConfirm(t("공지사항을 저장하시겠습니까?"), () => {
       saveMutation.mutate(
         {
           id: noticeId,
           payload: {
-            title: title.trim(),
-            category: category.trim(),
-            status,
-            content,
+            title: values.title.trim(),
+            category: values.category.trim(),
+            status: values.status,
+            content: values.content,
           },
         },
         {
@@ -183,6 +187,10 @@ function NoticeEditorForm({
     });
   };
 
+  const onInvalidSubmit: SubmitErrorHandler<NoticeEditorFormValue> = () => {
+    openAlert(t("제목, 카테고리, 내용을 모두 입력해주세요."));
+  };
+
   return (
     <section className="notice-editor-scope">
       <PageHeader
@@ -196,19 +204,19 @@ function NoticeEditorForm({
           {t("공지사항 정보")}
         </div>
 
-        <div
+        <form
           className="space-y-5 px-5 py-6"
           data-color-mode={theme === "dark" ? "dark" : "light"}
+          onSubmit={handleSubmit(onValidSubmit, onInvalidSubmit)}
         >
           <label className="block">
             <div className="mb-2 text-sm font-semibold text-slate-500 dark:text-slate-300">
               {t("제목")} <span className="text-rose-500">*</span>
             </div>
             <input
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
+              {...register("title")}
               className={`h-10 w-full rounded-md border px-3 text-sm text-slate-700 dark:bg-dark-surface-alt dark:text-slate-100 ${
-                titleError
+                errors.title
                   ? "border-rose-400 dark:border-rose-500"
                   : "border-slate-200 dark:border-dark-border"
               }`}
@@ -220,10 +228,9 @@ function NoticeEditorForm({
               {t("카테고리")} <span className="text-rose-500">*</span>
             </div>
             <input
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
+              {...register("category")}
               className={`h-10 w-full rounded-md border px-3 text-sm text-slate-700 dark:bg-dark-surface-alt dark:text-slate-100 ${
-                categoryError
+                errors.category
                   ? "border-rose-400 dark:border-rose-500"
                   : "border-slate-200 dark:border-dark-border"
               }`}
@@ -236,10 +243,7 @@ function NoticeEditorForm({
             </div>
             <div className="relative">
               <select
-                value={status}
-                onChange={(event) =>
-                  setStatus(event.target.value as NoticeStatus)
-                }
+                {...register("status")}
                 className="h-10 w-full cursor-pointer appearance-none rounded-md border border-slate-200 bg-white px-3 pr-8 text-sm text-slate-700 dark:border-dark-border dark:bg-dark-surface-alt dark:text-slate-100"
               >
                 <option value="draft">{t("임시저장")}</option>
@@ -255,10 +259,16 @@ function NoticeEditorForm({
             <div className="mb-2 text-sm font-semibold text-slate-500 dark:text-slate-300">
               {t("에디터")} <span className="text-rose-500">*</span>
             </div>
-            <MarkdownEditor
-              value={content}
-              onChange={setContent}
-              hasError={contentError}
+            <Controller
+              control={control}
+              name="content"
+              render={({ field }) => (
+                <MarkdownEditor
+                  value={field.value}
+                  onChange={field.onChange}
+                  hasError={Boolean(errors.content)}
+                />
+              )}
             />
           </div>
 
@@ -271,15 +281,14 @@ function NoticeEditorForm({
               {t("취소")}
             </button>
             <button
-              type="button"
+              type="submit"
               className="cursor-pointer rounded-md bg-main-color px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
               disabled={saveMutation.isPending}
-              onClick={onSave}
             >
               {t("확인")}
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </section>
   );
